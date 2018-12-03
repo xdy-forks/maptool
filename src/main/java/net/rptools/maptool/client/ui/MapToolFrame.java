@@ -135,7 +135,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.jidesoft.docking.DockableFrame;
 
-
 /**
  */
 public class MapToolFrame extends JFrame implements WindowListener, AppEventListener {
@@ -844,7 +843,7 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
 	}
 
 	public boolean isCommandPanelVisible() {
-		return getFrame(MTFrame.CHAT).isShowing();
+		return getCommandPanel().isShowing();
 	}
 
 	public void showCommandPanel() {
