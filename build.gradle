@@ -100,6 +100,7 @@ run {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 
 spotless {
@@ -118,7 +119,7 @@ spotless {
 }
 
 jacoco {
-    toolVersion = "0.8.1"
+    toolVersion = "0.8.2"
     reportsDir = file("$buildDir/reports/jacoco")
 }
 
