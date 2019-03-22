@@ -174,9 +174,4 @@ public class CreateVersionedInstallSplash extends Application {
     }
     return defaultValue;
   }
-
-  /** @return the resourceImage */
-  public static String getResourceImage() {
-    return resourceImage;
-  }
 }
