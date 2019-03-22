@@ -79,10 +79,10 @@ public class SplashScreenJFX extends JFrame implements ISplashScreen {
   }
 
   /* (non-Javadoc)
- * @see net.rptools.maptool.client.swing.ISplashScreen#hideSplashScreen()
- */
-@Override
-public void hideSplashScreen() {
+   * @see net.rptools.maptool.client.swing.ISplashScreen#hideSplashScreen()
+   */
+  @Override
+  public void hideSplashScreen() {
     setVisible(false);
     dispose();
   }
