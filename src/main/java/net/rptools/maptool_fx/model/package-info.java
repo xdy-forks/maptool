@@ -1,7 +1,7 @@
 /**
  * MVC Models
- * <p>
- * Contains MapTool Models to hold and maniplulate various data points
+ *
+ * <p>Contains MapTool Models to hold and maniplulate various data points
  *
  * @since 2.0
  * @author Jamz

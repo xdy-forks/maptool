@@ -1,7 +1,7 @@
 /**
  * MVC Controllers
- * <p>
- * Contains MapTool Controllers for various UI components
+ *
+ * <p>Contains MapTool Controllers for various UI components
  *
  * @since 2.0
  * @author Jamz
