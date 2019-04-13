@@ -124,13 +124,18 @@ spotless {
         licenseHeaderFile 'spotless.license.java'
         // Now using the Google Java style guide
         //eclipse().configFile('build-resources/eclipse.prefs.formatter.xml')
+        target project.fileTree(project.rootDir) {
+            include 'src/**/*.java'
+            exclude '**/MapToolScriptTokenMaker.java'
+        }
         googleJavaFormat()
         // If you get exceptions thrown by spotlessApply, this might
         // help.  Enable it here if the problem is with a Java file, and
         // below if it is not.  Don't leave it enabled, as nothing will
         // actually be updated if you do.
         // https://github.com/diffplug/spotless/blob/master/PADDEDCELL.md
-        paddedCell()
+        //paddedCell()
+
     }
 
 
