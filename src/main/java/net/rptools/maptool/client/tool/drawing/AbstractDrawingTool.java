@@ -27,6 +27,7 @@ import java.awt.geom.Path2D;
 import java.util.List;
 import net.rptools.lib.swing.ColorPicker;
 import net.rptools.lib.swing.SwingUtil;
+import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.MapToolUtil;
 import net.rptools.maptool.client.ScreenPoint;
 import net.rptools.maptool.client.tool.DefaultTool;
@@ -207,6 +208,8 @@ public abstract class AbstractDrawingTool extends DefaultTool implements ZoneOve
     } else {
       pen.setBackgroundMode(Pen.MODE_TRANSPARENT);
     }
+    pen.setSquareCap(picker.isSquareCapSelected());
+    pen.setThickness(picker.getStrokeWidth());
     return pen;
   }
 
@@ -246,7 +249,10 @@ public abstract class AbstractDrawingTool extends DefaultTool implements ZoneOve
     if (!hasPaint(pen)) {
       return;
     }
+    if (drawable.getBounds() == null) return;
     drawable.setLayer(selectedLayer);
+    if (MapTool.getPlayer().isGM()) drawable.setLayer(selectedLayer);
+    else drawable.setLayer(Layer.TOKEN);
 
     // Send new textures
     MapToolUtil.uploadTexture(pen.getPaint());

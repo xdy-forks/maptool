@@ -218,6 +218,10 @@ public class PartitionedDrawableRenderer implements DrawableRenderer {
     for (DrawnElement element : drawableList) {
       timer.start("createChunk:calculate");
       Drawable drawable = element.getDrawable();
+      if (drawable.getBounds() == null) {
+        timer.stop("createChunk:calculate");
+        continue;
+      }
 
       Rectangle2D drawnBounds = new Rectangle(drawable.getBounds());
       Rectangle2D chunkBounds =
@@ -261,8 +265,8 @@ public class PartitionedDrawableRenderer implements DrawableRenderer {
       timer.stop("createChunk:CreateChunk");
 
       if (pen.getOpacity() != 1 && pen.getOpacity() != 0 /*
-                                                                * handle legacy pens, besides, it doesn't make sense to have a non visible pen
-                                                                */) {
+																 * handle legacy pens, besides, it doesn't make sense to have a non visible pen
+																 */) {
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pen.getOpacity()));
       }
 

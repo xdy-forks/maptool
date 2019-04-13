@@ -33,6 +33,19 @@ import net.rptools.maptool.client.walker.astar.AStarVertHexEuclideanWalker;
 import net.rptools.maptool.model.TokenFootprint.OffsetTranslator;
 import net.rptools.maptool_fx.MapTool;
 
+/*
+ * @formatter:off
+ * Vertical Hex grids produce columns of hexes
+ * and have their points at the side
+ *  \_/ \
+ *  / \_/
+ *  \_/ \
+ *  / \_/
+ *  \_/ \
+ *
+ * @formatter:on
+ */
+
 public class HexGridVertical extends HexGrid {
 
   private static final int[] ALL_ANGLES =
@@ -86,11 +99,11 @@ public class HexGridVertical extends HexGrid {
    * For a horizontal hex grid we want the following layout:
    * @formatter:off
    *
-   *        7    8    9
-   *    -        5        -
-   *        1    2    3
+   *		7	8	9
+   *	-		5		-
+   *		1	2	3
    *
-   * @formatter:on
+   * @formatter:off
    * (non-Javadoc)
    * @see net.rptools.maptool.model.Grid#installMovementKeys(net.rptools.maptool.client.tool.PointerTool, java.util.Map)
    */
@@ -107,22 +120,22 @@ public class HexGridVertical extends HexGrid {
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD8, 0), new MovementKey(callback, 0, -h));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD9, 0), new MovementKey(callback, w, -h));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD4, 0), new MovementKey(callback,
-      // -1, 0));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD5, 0), new MovementKey(callback,
-      // 0, 0));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD6, 0), new MovementKey(callback,
-      // 1, 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD4, 0), new
+      // MovementKey(callback, -1, 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD5, 0), new
+      // MovementKey(callback, 0, 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD6, 0), new
+      // MovementKey(callback, 1, 0));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD1, 0), new MovementKey(callback, -w, h));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD2, 0), new MovementKey(callback, 0, h));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD3, 0), new MovementKey(callback, w, h));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), new MovementKey(callback, -1,
-      // 0));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), new MovementKey(callback, 1,
-      // 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), new MovementKey(callback,
+      // -1, 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), new MovementKey(callback,
+      // 1, 0));
       movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), new MovementKey(callback, 0, -h));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), new MovementKey(callback, 0, h));
@@ -226,5 +239,22 @@ public class HexGridVertical extends HexGrid {
   @Override
   protected OffsetTranslator getOffsetTranslator() {
     return OFFSET_TRANSLATOR;
+  }
+
+  /** Returns the cell centre as well as nearest vertex */
+  @Override
+  public ZonePoint getNearestVertex(ZonePoint point) {
+    double heightHalf = getURadius() / 2;
+    //
+    double isoY =
+        ((point.y - getOffsetY()) / getVRadius() + (point.x - getOffsetX()) / heightHalf) / 2;
+    double isoX =
+        ((point.x - getOffsetX()) / heightHalf - (point.y - getOffsetY()) / getVRadius()) / 2;
+    int newX = (int) Math.floor(isoX);
+    int newY = (int) Math.floor(isoY);
+    //
+    double mapY = (newY - newX) * getVRadius();
+    double mapX = ((newX + newY) * heightHalf) + heightHalf;
+    return new ZonePoint((int) (mapX) + getOffsetX(), (int) (mapY) + getOffsetY());
   }
 }

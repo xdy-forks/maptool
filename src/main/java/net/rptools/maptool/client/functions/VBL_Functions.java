@@ -15,9 +15,7 @@
 package net.rptools.maptool.client.functions;
 
 import java.awt.BasicStroke;
-import java.awt.Dimension;
 import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
@@ -26,7 +24,7 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
-import net.rptools.lib.swing.SwingUtil;
+import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.MapToolVariableResolver;
 import net.rptools.maptool.client.ui.zone.ZoneRenderer;
 import net.rptools.maptool.client.ui.zone.vbl.TokenVBL;
@@ -50,6 +48,8 @@ import net.sf.json.JSONObject;
  * in VBL
  *
  * <p>getVBL(jsonArray) :: Get the VBL for a given area and return as array of points
+ *
+ * <p>transferVBL(direction[, delete][, tokenId] :: move or copy VBL between token and VBL layer
  */
 public class VBL_Functions extends AbstractFunction {
   private static final VBL_Functions instance = new VBL_Functions();
@@ -57,7 +57,7 @@ public class VBL_Functions extends AbstractFunction {
   private static final String[] paramScale = new String[] {"sx", "sy"};
 
   private VBL_Functions() {
-    super(0, 2, "drawVBL", "eraseVBL", "getVBL", "getTokenVBL", "setTokenVBL", "transferVBL");
+    super(0, 3, "drawVBL", "eraseVBL", "getVBL", "getTokenVBL", "setTokenVBL", "transferVBL");
   }
 
   public static VBL_Functions getInstance() {
@@ -289,7 +289,7 @@ public class VBL_Functions extends AbstractFunction {
     if (functionName.equals("transferVBL")) {
       Token token = null;
 
-      if (parameters.size() > 2)
+      if (parameters.size() > 3)
         throw new ParserException(
             I18N.getText(
                 "macro.function.general.tooManyParam", functionName, 1, parameters.size()));
@@ -302,8 +302,11 @@ public class VBL_Functions extends AbstractFunction {
       if (!MapTool.getParser().isMacroPathTrusted())
         throw new ParserException(I18N.getText("macro.function.general.noPerm", functionName));
 
-      if (parameters.size() == 2) {
-        token = FindTokenFunctions.findToken(parameters.get(1).toString(), null);
+      // make sure only to check the last parameter as token if it is not the BigDecimal for delete
+      if (parameters.size() >= 2
+          && (!(parameters.get(parameters.size() - 1) instanceof BigDecimal))) {
+        token =
+            FindTokenFunctions.findToken(parameters.get(parameters.size() - 1).toString(), null);
 
         if (token == null) {
           throw new ParserException(
@@ -312,13 +315,18 @@ public class VBL_Functions extends AbstractFunction {
                   "getTokenVBL",
                   parameters.get(0).toString()));
         }
-      } else if (parameters.size() == 1) {
+      } else {
         MapToolVariableResolver res = (MapToolVariableResolver) parser.getVariableResolver();
         token = res.getTokenInContext();
         if (token == null) {
           throw new ParserException(
-              I18N.getText("macro.function.general.noImpersonated", "getTokenVBL"));
+              I18N.getText("macro.function.general.noImpersonated", "transferVBL"));
         }
+      }
+
+      boolean delete = false;
+      if (parameters.size() >= 2 && BigDecimal.ONE.equals(parameters.get(1))) {
+        delete = true;
       }
 
       Object val = parameters.get(0);
@@ -337,83 +345,16 @@ public class VBL_Functions extends AbstractFunction {
       }
 
       if (vblFromToken) {
-        renderVBL(renderer, token.getTransformedVBL(), false);
+        TokenVBL.renderVBL(renderer, token.getTransformedVBL(), false);
+        if (delete) {
+          token.setVBL(null);
+        }
       } else {
-        Rectangle footprintBounds = token.getBounds(renderer.getZone());
-        Area newTokenVBL = new Area(footprintBounds);
-        Dimension imgSize = new Dimension(token.getWidth(), token.getHeight());
-        SwingUtil.constrainTo(imgSize, footprintBounds.width, footprintBounds.height);
-        AffineTransform atArea = new AffineTransform();
-
-        double tx, ty, sx, sy;
-
-        // Prepare to reverse all the current token transformations so we can store a
-        // raw untransformed version on the Token
-        if (token.isSnapToScale()) {
-          tx =
-              -newTokenVBL.getBounds().getX()
-                  - (int) ((footprintBounds.getWidth() - imgSize.getWidth()) / 2);
-          ty =
-              -newTokenVBL.getBounds().getY()
-                  - (int) ((footprintBounds.getHeight() - imgSize.getHeight()) / 2);
-          sx = 1 / (imgSize.getWidth() / token.getWidth());
-          sy = 1 / (imgSize.getHeight() / token.getHeight());
-
-          atArea.concatenate(AffineTransform.getScaleInstance(sx, sy));
-        } else {
-          tx = -newTokenVBL.getBounds().getX();
-          ty = -newTokenVBL.getBounds().getY();
-          sx = 1 / token.getScaleX();
-          sy = 1 / token.getScaleY();
-
-          atArea.concatenate(AffineTransform.getScaleInstance(sx, sy));
+        Area vbl = TokenVBL.getVBL_underToken(renderer, token);
+        token.setVBL(TokenVBL.getMapVBL_transformed(renderer, token));
+        if (delete) {
+          TokenVBL.renderVBL(renderer, vbl, true);
         }
-
-        if (token.getShape() == Token.TokenShape.TOP_DOWN
-            && Math.toRadians(token.getFacingInDegrees()) != 0.0) {
-          // Get the center of the token bounds
-          double rx = newTokenVBL.getBounds2D().getCenterX();
-          double ry = newTokenVBL.getBounds2D().getCenterY();
-
-          // Rotate the area to match the token facing
-          AffineTransform captureArea =
-              AffineTransform.getRotateInstance(Math.toRadians(token.getFacingInDegrees()), rx, ry);
-          newTokenVBL = new Area(captureArea.createTransformedShape(newTokenVBL));
-
-          // Capture the VBL via intersection
-          newTokenVBL.intersect(renderer.getZone().getTopology());
-
-          // Rotate the area back to prep to store on Token
-          captureArea =
-              AffineTransform.getRotateInstance(
-                  -Math.toRadians(token.getFacingInDegrees()), rx, ry);
-          newTokenVBL = new Area(captureArea.createTransformedShape(newTokenVBL));
-        } else {
-          // Token will not be rotated so lets just capture the VBL
-          newTokenVBL.intersect(renderer.getZone().getTopology());
-        }
-
-        // Translate the capture to zero out the x,y to store on the Token
-        atArea.concatenate(AffineTransform.getTranslateInstance(tx, ty));
-        newTokenVBL = new Area(atArea.createTransformedShape(newTokenVBL));
-
-        // Lets account for flipped images...
-        atArea = new AffineTransform();
-        if (token.isFlippedX()) {
-          atArea.concatenate(AffineTransform.getScaleInstance(-1.0, 1.0));
-          atArea.concatenate(AffineTransform.getTranslateInstance(-token.getWidth(), 0));
-        }
-
-        if (token.isFlippedY()) {
-          atArea.concatenate(AffineTransform.getScaleInstance(1.0, -1.0));
-          atArea.concatenate(AffineTransform.getTranslateInstance(0, -token.getHeight()));
-        }
-
-        // Do any final transformations for flipped images
-        newTokenVBL = new Area(atArea.createTransformedShape(newTokenVBL));
-
-        // Transform the VBL capture and store on the Token
-        token.setVBL(newTokenVBL);
       }
     }
 
@@ -521,7 +462,7 @@ public class VBL_Functions extends AbstractFunction {
 
     if (!atArea.isIdentity()) area.transform(atArea);
 
-    return renderVBL(renderer, area, erase);
+    return TokenVBL.renderVBL(renderer, area, erase);
   }
 
   private void applyTranslate(
@@ -610,7 +551,8 @@ public class VBL_Functions extends AbstractFunction {
           new BasicStroke(t > 0f ? t : 0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER);
       area = new Area(stroke.createStrokedShape(path));
     } else {
-      // User requests for polygon to be closed, so a Polygon is used which is automatically closed
+      // User requests for polygon to be closed, so a Polygon is used which is automatically
+      // closed
       Polygon poly = new Polygon();
 
       for (int i = 0; i < points.size(); i++) {
@@ -658,7 +600,7 @@ public class VBL_Functions extends AbstractFunction {
 
     if (!atArea.isIdentity()) area.transform(atArea);
 
-    return renderVBL(renderer, area, erase);
+    return TokenVBL.renderVBL(renderer, area, erase);
   }
 
   /**
@@ -742,7 +684,7 @@ public class VBL_Functions extends AbstractFunction {
 
     if (!atArea.isIdentity()) area.transform(atArea);
 
-    return renderVBL(renderer, area, erase);
+    return TokenVBL.renderVBL(renderer, area, erase);
   }
 
   /**
@@ -833,7 +775,7 @@ public class VBL_Functions extends AbstractFunction {
 
     if (!atArea.isIdentity()) area.transform(atArea);
 
-    return renderVBL(renderer, area, erase);
+    return TokenVBL.renderVBL(renderer, area, erase);
   }
 
   /**

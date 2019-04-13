@@ -81,7 +81,12 @@ public class MemoryStatusBar extends JProgressBar {
     return getMinimumSize();
   }
 
-  public double getLargestMemoryUsed() {
+  /**
+   * Returns the largest memory amount that has been used during running of the program.
+   *
+   * @return Memory size as a long
+   */
+  public long getLargestMemoryUsed() {
     return largestMemoryUsed;
   }
 

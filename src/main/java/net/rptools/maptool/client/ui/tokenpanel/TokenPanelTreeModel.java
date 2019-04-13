@@ -50,7 +50,7 @@ public class TokenPanelTreeModel implements TreeModel, ModelChangeListener {
 
   public enum View {
     // @formatter:off
-    // I18N key                        Zone.Layer                    Req'd?    isAdmin?
+    // I18N key						Zone.Layer					Req'd?	isAdmin?
     TOKENS(_TOKENS, Zone.Layer.TOKEN, false, false),
     PLAYERS(_PLAYERS, Zone.Layer.TOKEN, false, false),
     GROUPS(_GROUPS, Zone.Layer.TOKEN, false, false),

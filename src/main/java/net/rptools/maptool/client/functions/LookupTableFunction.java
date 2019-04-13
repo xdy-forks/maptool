@@ -160,7 +160,7 @@ public class LookupTableFunction extends AbstractFunction {
       String value = params.get(3).toString();
       MD5Key asset = null;
       if (params.size() > 4) {
-        asset = new MD5Key(params.get(4).toString());
+        asset = getAssetFromString(params.get(4).toString());
       }
       LookupTable lookupTable = getMaptoolTable(name, function);
       lookupTable.addEntry(Integer.valueOf(min), Integer.valueOf(max), value, asset);
@@ -194,7 +194,7 @@ public class LookupTableFunction extends AbstractFunction {
       String lookups = params.get(2).toString();
       MD5Key asset = null;
       if (params.size() > 3) {
-        asset = new MD5Key(params.get(3).toString());
+        asset = getAssetFromString(params.get(3).toString());
       }
       LookupTable lookupTable = new LookupTable();
       lookupTable.setName(name);
@@ -230,7 +230,7 @@ public class LookupTableFunction extends AbstractFunction {
       checkTrusted(function);
       checkNumberOfParameters("setTableImage", params, 2, 2);
       String name = params.get(0).toString();
-      MD5Key asset = new MD5Key(params.get(1).toString());
+      MD5Key asset = getAssetFromString(params.get(1).toString());
       LookupTable lookupTable = getMaptoolTable(name, function);
       lookupTable.setTableImage(asset);
       MapTool.serverCommand().updateCampaign(MapTool.getCampaign().getCampaignProperties());
@@ -259,8 +259,9 @@ public class LookupTableFunction extends AbstractFunction {
       String roll = params.get(1).toString();
       String result = params.get(2).toString();
       MD5Key imageId = null;
-      if (params.size() == 4) imageId = new MD5Key(params.get(3).toString());
-
+      if (params.size() == 4) {
+        imageId = getAssetFromString(params.get(3).toString());
+      }
       LookupTable lookupTable = getMaptoolTable(name, function);
       LookupEntry entry = lookupTable.getLookup(roll);
       if (entry == null) return 0; // no entry was found
@@ -427,5 +428,21 @@ public class LookupTableFunction extends AbstractFunction {
               "macro.function.LookupTableFunctions.unknownTable", functionName, tableName));
     }
     return lookupTable;
+  }
+
+  /**
+   * Provide more consistent handling of assets. Allow assets to be passed as 32 digit numbers or
+   * "asset://" urls.
+   *
+   * @param assetString String containing either an asset ID or asset URL.
+   * @return MD5Key asset id.
+   */
+  private MD5Key getAssetFromString(String assetString) {
+    if (assetString.toLowerCase().startsWith("asset://")) {
+      String id = assetString.substring(8);
+      return new MD5Key(id);
+    } else {
+      return new MD5Key(assetString);
+    }
   }
 }

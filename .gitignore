@@ -21,8 +21,15 @@ Thumbs.db
 *~
 target/
 build/
+/bin/
+target/
 out/
 \${sys:appHome}/
+/releases/
+*.log
+*~
+\${sys:appHome}/
+
 
 # Automatically Generated
 ################################################################################

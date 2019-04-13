@@ -19,16 +19,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.rptools.common.expression.ExpressionParser;
 import net.rptools.common.expression.Result;
 import net.rptools.maptool.client.functions.*;
 import net.rptools.maptool.client.functions.AbortFunction.AbortFunctionException;
 import net.rptools.maptool.client.functions.AssertFunction.AssertFunctionException;
+import net.rptools.maptool.client.functions.ReturnFunction.ReturnFunctionException;
 import net.rptools.maptool.client.ui.htmlframe.HTMLFrameFactory;
 import net.rptools.maptool.client.ui.macrobuttons.buttons.MacroButtonPrefs;
 import net.rptools.maptool.client.ui.zone.ZoneRenderer;
@@ -53,68 +57,73 @@ public class MapToolLineParser {
   private static final Logger log = LogManager.getLogger(MapToolLineParser.class);
 
   /** MapTool functions to add to the parser. */
-  private static final Function[] mapToolParserFunctions = {
-    AbortFunction.getInstance(),
-    AssertFunction.getInstance(),
-    AddAllToInitiativeFunction.getInstance(),
-    ChatFunction.getInstance(),
-    CurrentInitiativeFunction.getInstance(),
-    DefineMacroFunction.getInstance(),
-    EvalMacroFunctions.getInstance(),
-    FindTokenFunctions.getInstance(),
-    HasImpersonated.getInstance(),
-    InitiativeRoundFunction.getInstance(),
-    InputFunction.getInstance(),
-    IsTrustedFunction.getInstance(),
-    JSONMacroFunctions.getInstance(),
-    LookupTableFunction.getInstance(),
-    MacroArgsFunctions.getInstance(),
-    MacroDialogFunctions.getInstance(),
-    MacroFunctions.getInstance(),
-    MacroLinkFunction.getInstance(),
-    MapFunctions.getInstance(),
-    MiscInitiativeFunction.getInstance(),
-    PlayerFunctions.getInstance(),
-    RemoveAllFromInitiativeFunction.getInstance(),
-    StateImageFunction.getInstance(),
-    StringFunctions.getInstance(),
-    StrListFunctions.getInstance(),
-    StrPropFunctions.getInstance(),
-    SwitchTokenFunction.getInstance(),
-    TokenAddToInitiativeFunction.getInstance(),
-    TokenBarFunction.getInstance(),
-    TokenCopyDeleteFunctions.getInstance(),
-    TokenGMNameFunction.getInstance(),
-    TokenHaloFunction.getInstance(),
-    TokenImage.getInstance(),
-    TokenInitFunction.getInstance(),
-    TokenInitHoldFunction.getInstance(),
-    TokenLabelFunction.getInstance(),
-    TokenLightFunctions.getInstance(),
-    TokenLocationFunctions.getInstance(),
-    TokenNameFunction.getInstance(),
-    TokenPropertyFunctions.getInstance(),
-    TokenRemoveFromInitiativeFunction.getInstance(),
-    TokenSelectionFunctions.getInstance(),
-    TokenSightFunctions.getInstance(),
-    TokenSpeechFunctions.getInstance(),
-    TokenStateFunction.getInstance(),
-    TokenVisibleFunction.getInstance(),
-    UserDefinedMacroFunctions.getInstance(),
-    isVisibleFunction.getInstance(),
-    getInfoFunction.getInstance(),
-    TokenMoveFunctions.getInstance(),
-    FogOfWarFunctions.getInstance(),
-    VBL_Functions.getInstance(),
-    ZoomFunctions.getInstance(),
-    ParserPropertyFunctions.getInstance(),
-    MathFunctions.getInstance(),
-    MacroJavaScriptBridge.getInstance(),
-    DrawingFunctions.getInstance(),
-    ExportDataFunctions.getInstance(),
-    HTTP_Functions.getInstance(),
-    HeroLabFunctions.getInstance()
-  };
+  private static final List<Function> mapToolParserFunctions =
+      Stream.of(
+              AbortFunction.getInstance(),
+              AssertFunction.getInstance(),
+              AddAllToInitiativeFunction.getInstance(),
+              ChatFunction.getInstance(),
+              CurrentInitiativeFunction.getInstance(),
+              DefineMacroFunction.getInstance(),
+              EvalMacroFunctions.getInstance(),
+              FindTokenFunctions.getInstance(),
+              HasImpersonated.getInstance(),
+              InitiativeRoundFunction.getInstance(),
+              InputFunction.getInstance(),
+              IsTrustedFunction.getInstance(),
+              JSONMacroFunctions.getInstance(),
+              LookupTableFunction.getInstance(),
+              MacroArgsFunctions.getInstance(),
+              MacroDialogFunctions.getInstance(),
+              MacroFunctions.getInstance(),
+              MacroLinkFunction.getInstance(),
+              MapFunctions.getInstance(),
+              MiscInitiativeFunction.getInstance(),
+              PlayerFunctions.getInstance(),
+              RemoveAllFromInitiativeFunction.getInstance(),
+              ReturnFunction.getInstance(),
+              StateImageFunction.getInstance(),
+              StringFunctions.getInstance(),
+              StrListFunctions.getInstance(),
+              StrPropFunctions.getInstance(),
+              SwitchTokenFunction.getInstance(),
+              TokenAddToInitiativeFunction.getInstance(),
+              TokenBarFunction.getInstance(),
+              TokenCopyDeleteFunctions.getInstance(),
+              TokenGMNameFunction.getInstance(),
+              TokenHaloFunction.getInstance(),
+              TokenImage.getInstance(),
+              TokenInitFunction.getInstance(),
+              TokenInitHoldFunction.getInstance(),
+              TokenLabelFunction.getInstance(),
+              TokenLightFunctions.getInstance(),
+              TokenLocationFunctions.getInstance(),
+              TokenNameFunction.getInstance(),
+              TokenPropertyFunctions.getInstance(),
+              TokenRemoveFromInitiativeFunction.getInstance(),
+              TokenSelectionFunctions.getInstance(),
+              TokenSightFunctions.getInstance(),
+              TokenSpeechFunctions.getInstance(),
+              TokenStateFunction.getInstance(),
+              TokenVisibleFunction.getInstance(),
+              UserDefinedMacroFunctions.getInstance(),
+              isVisibleFunction.getInstance(),
+              getInfoFunction.getInstance(),
+              TokenMoveFunctions.getInstance(),
+              FogOfWarFunctions.getInstance(),
+              VBL_Functions.getInstance(),
+              ZoomFunctions.getInstance(),
+              ParserPropertyFunctions.getInstance(),
+              MathFunctions.getInstance(),
+              MacroJavaScriptBridge.getInstance(),
+              DrawingGetterFunctions.getInstance(),
+              DrawingSetterFunctions.getInstance(),
+              DrawingMiscFunctions.getInstance(),
+              ExportDataFunctions.getInstance(),
+              RESTfulFunctions.getInstance(),
+              HeroLabFunctions.getInstance(),
+              LastRolledFunction.getInstance())
+          .collect(Collectors.toList());
 
   /** Name and Source or macros that come from chat. */
   public static final String CHAT_INPUT = "chat";
@@ -148,6 +157,12 @@ public class MapToolLineParser {
 
   /** The maximum amount of loop iterations. */
   private int maxLoopIterations = DEFAULT_MAX_LOOP_ITERATIONS;
+
+  /** The dice rolls that occurred. */
+  private List<Integer> lastRolled = new LinkedList<>();
+
+  /** The dice rolls that occurred in the previous parse this one. */
+  private List<Integer> rolled = new LinkedList<>();
 
   private enum Output { // Mutually exclusive output formats
     NONE,
@@ -190,10 +205,15 @@ public class MapToolLineParser {
     SKIP_NEXT_CHAR
   }
 
+  public List<Function> getMacroFunctions() {
+    mapToolParserFunctions.add(TokenMoveFunctions.getInstance());
+    return mapToolParserFunctions;
+  }
+
   public List<String> listAllMacroFunctions() {
     List<String> functionList = new ArrayList<String>();
 
-    for (Function function : mapToolParserFunctions) {
+    for (Function function : getMacroFunctions()) {
       functionList.addAll(Arrays.asList(function.getAliases()));
     }
 
@@ -496,6 +516,7 @@ public class MapToolLineParser {
 
       // Fill in the found parameters, converting to BigDecimal if possible.
       if (params == null) params = new Object[numParamsFound];
+
       for (int i = 0; i < numParamsFound; i++) {
         params[i] = toNumIfPossible(paramList.get(i));
       }
@@ -681,6 +702,12 @@ public class MapToolLineParser {
   public String parseLine(
       MapToolVariableResolver res, Token tokenInContext, String line, MapToolMacroContext context)
       throws ParserException {
+
+    // copy previous rolls and clear out for new rolls.
+    lastRolled.clear();
+    lastRolled.addAll(rolled);
+    rolled.clear();
+
     if (line == null) {
       return "";
     }
@@ -823,12 +850,14 @@ public class MapToolLineParser {
                   try {
                     loopCount = option.getParsedIntParam(0, resolver, tokenInContext);
                     if (loopCount < 0) error = I18N.getText("lineParser.countNonNeg", loopCount);
+
                   } catch (ParserException pe) {
                     error = I18N.getText("lineParser.errorProcessingOpt", "COUNT", pe.getMessage());
                   }
                   loopSep = option.getStringParam(1);
 
                   if (error != null) throw doError(error, opts, roll);
+
                   break;
 
                 case FOR:
@@ -862,11 +891,13 @@ public class MapToolLineParser {
                     if (loopStep == 0) error = I18N.getText("lineParser.forNoZeroStep");
                     if ((loopEnd <= loopStart && loopStep > 0)
                         || (loopEnd >= loopStart && loopStep < 0)) loopCount = 0;
+
                   } catch (ParserException pe) {
                     error = I18N.getText("lineParser.errorProcessingOpt", "FOR", pe.getMessage());
                   }
 
                   if (error != null) throw doError(error, opts, roll);
+
                   break;
 
                 case FOREACH:
@@ -919,6 +950,7 @@ public class MapToolLineParser {
                   }
 
                   if (error != null) throw doError(error, opts, roll);
+
                   break;
 
                 case WHILE:
@@ -1303,7 +1335,30 @@ public class MapToolLineParser {
                 String callName = result.getValue().toString();
                 result = parseExpression(resolver, tokenInContext, rollBranch);
                 String macroArgs = result.getValue().toString();
-                output_text = runMacro(resolver, tokenInContext, callName, macroArgs);
+
+                try {
+                  output_text = runMacro(resolver, tokenInContext, callName, macroArgs);
+                } catch (AbortFunctionException e) {
+                  // required to catch abort that are not
+                  // in a (UDF)function call
+                  // but in a real "macro(...)" call
+                  log.debug(e);
+                  boolean catchAbort =
+                      BigDecimal.ONE.equals(resolver.getVariable("macro.catchAbort"));
+                  if (!catchAbort) throw e;
+                  output_text = "";
+                } catch (AssertFunctionException assertEx) {
+                  // required to catch assert that are not
+                  // in a (UDF)function call
+                  // but in a real "macro(...)" call
+                  log.debug(assertEx);
+                  boolean catchAssert =
+                      BigDecimal.ONE.equals(resolver.getVariable("macro.catchAssert"));
+                  if (!catchAssert) throw assertEx;
+                  MapTool.addLocalMessage(assertEx.getMessage());
+                  output_text = "";
+                }
+
                 if (output != Output.NONE) {
                   expressionBuilder.append(output_text);
                 }
@@ -1411,13 +1466,34 @@ public class MapToolLineParser {
         b.append(expression);
         log.debug(b.toString());
       }
-      return createParser(resolver, tokenInContext == null ? false : true).evaluate(expression);
+      Result res =
+          createParser(resolver, tokenInContext == null ? false : true).evaluate(expression);
+      rolled.addAll(res.getRolled());
+
+      return res;
     } catch (AbortFunctionException e) {
       log.debug(e);
-      throw e;
-    } catch (AssertFunctionException afe) {
-      log.debug(afe);
-      throw afe;
+      boolean catchAbort = BigDecimal.ONE.equals(resolver.getVariable("macro.catchAbort"));
+      if (!catchAbort) throw e;
+
+      // return an empty result to not collide with tooltips
+      // when catching an abort
+      Result result = new Result("");
+      result.setDetailExpression("");
+      result.setValue("");
+      return result;
+    } catch (AssertFunctionException e) {
+      log.debug(e);
+      boolean catchAssert = BigDecimal.ONE.equals(resolver.getVariable("macro.catchAssert"));
+      if (!catchAssert) throw e;
+      MapTool.addLocalMessage(e.getMessage());
+
+      // return an empty result to not collide with tooltips
+      // when catching an assert`
+      Result result = new Result("");
+      result.setDetailExpression("");
+      result.setValue("");
+      return result;
     } catch (Exception e) {
       if (e.getCause() instanceof ParserException) {
         log.debug(e.getCause());
@@ -1581,9 +1657,19 @@ public class MapToolLineParser {
       throw new ParserException(I18N.getText("lineParser.maxRecursion"));
     }
     try {
-      String macroOutput = runMacroBlock(macroResolver, tokenInContext, macroBody, macroContext);
-      // Copy the return value of the macro into our current variable scope.
-      resolver.setVariable("macro.return", macroResolver.getVariable("macro.return"));
+      String macroOutput = null;
+
+      try {
+        macroOutput = runMacroBlock(macroResolver, tokenInContext, macroBody, macroContext);
+        // Copy the return value of the macro into our current variable scope.
+        resolver.setVariable("macro.return", macroResolver.getVariable("macro.return"));
+      } catch (ReturnFunctionException returnEx) {
+        Object result = returnEx.getResult();
+        if (result != null) {
+          resolver.setVariable("macro.return", result);
+          macroOutput = result.toString();
+        }
+      }
       if (macroOutput != null) {
         // Note! Its important that trim is not used to replace the following two lines.
         // If you use String.trim() you may inadvertnatly remove the special characters
@@ -1810,6 +1896,7 @@ public class MapToolLineParser {
   private String rollString(Collection<String> options, String tooltip, String text) {
     StringBuilder s = new StringBuilder("\036");
     if (options != null) s.append("\001" + StringUtils.join(options, ",") + "\002");
+
     if (tooltip != null) {
       tooltip = tooltip.replaceAll("'", "&#39;");
       s.append(tooltip + "\037");
@@ -2079,5 +2166,13 @@ public class MapToolLineParser {
 
   public int getContextStackSize() {
     return contextStack.size();
+  }
+
+  public List<Integer> getRolled() {
+    return List.copyOf(rolled);
+  }
+
+  public List<Integer> getLastRolled() {
+    return List.copyOf(lastRolled);
   }
 }

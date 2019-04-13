@@ -393,12 +393,16 @@ public class CommandPanel extends JPanel implements Observer {
       actions.put(AppActions.CANCEL_COMMAND_ID, AppActions.CANCEL_COMMAND);
       actions.put(AppActions.COMMAND_UP_ID, new CommandHistoryUpAction());
       actions.put(AppActions.COMMAND_DOWN_ID, new CommandHistoryDownAction());
+      actions.put(AppActions.NEWLINE_COMMAND_ID, AppActions.NEWLINE_COMMAND);
 
       InputMap inputs = commandTextArea.getInputMap();
       inputs.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), AppActions.CANCEL_COMMAND_ID);
       inputs.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), AppActions.COMMIT_COMMAND_ID);
       inputs.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), AppActions.COMMAND_UP_ID);
       inputs.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), AppActions.COMMAND_DOWN_ID);
+      inputs.put(
+          KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.SHIFT_DOWN_MASK),
+          AppActions.NEWLINE_COMMAND_ID);
 
       // Resize on demand
       MapTool.getEventDispatcher()
@@ -518,6 +522,12 @@ public class CommandPanel extends JPanel implements Observer {
     commandTextArea.setText("");
     validate();
     MapTool.getFrame().hideCommandPanel();
+  }
+
+  /** Inserts a newline into the chat input box. */
+  public void insertNewline() {
+    String text = commandTextArea.getText();
+    commandTextArea.replaceSelection("\n");
   }
 
   public void startMacro() {

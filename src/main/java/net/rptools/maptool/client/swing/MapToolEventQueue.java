@@ -39,20 +39,18 @@ public class MapToolEventQueue extends EventQueue {
 
   @Override
   protected void dispatchEvent(AWTEvent event) {
-    // Just turn this off for now...
-    super.dispatchEvent(event);
-
     try {
-      // super.dispatchEvent(event);
+      super.dispatchEvent(event);
     } catch (StackOverflowError soe) {
       log.error(soe, soe);
-      // optionPane.setTitle(I18N.getString("MapToolEventQueue.stackOverflow.title")); //$NON-NLS-1$
+      // optionPane.setTitle(I18N.getString("MapToolEventQueue.stackOverflow.title")); //
+      // $NON-NLS-1$
       // optionPane.setDetails(I18N.getString("MapToolEventQueue.stackOverflow"));
       // displayPopup();
-      // reportToSentryIO(soe);
+      reportToSentryIO(soe);
     } catch (Throwable t) {
       log.error(t, t);
-      // optionPane.setTitle(I18N.getString("MapToolEventQueue.unexpectedError")); //$NON-NLS-1$
+      // optionPane.setTitle(I18N.getString("MapToolEventQueue.unexpectedError")); // $NON-NLS-1$
       // optionPane.setDetails(toString(t));
       try {
         // displayPopup();
@@ -62,9 +60,12 @@ public class MapToolEventQueue extends EventQueue {
         // standard swing
         // dialog.
         log.error(thrown, thrown);
-        // JOptionPane.showMessageDialog(null, toString(thrown),
-        // I18N.getString("MapToolEventQueue.unexpectedError"), JOptionPane.ERROR_MESSAGE);
-        // reportToSentryIO(thrown);
+        // JOptionPane.showMessageDialog(
+        // null,
+        // toString(thrown),
+        // I18N.getString("MapToolEventQueue.unexpectedError"),
+        // JOptionPane.ERROR_MESSAGE);
+        reportToSentryIO(thrown);
       }
     }
   }
@@ -108,7 +109,8 @@ public class MapToolEventQueue extends EventQueue {
     user.setUsername(MapTool.getPlayer().getName());
     user.setId(MapTool.getClientId());
     user.setEmail(
-        MapTool.getPlayer().getName().replaceAll(" ", "_") + "@nerps.net"); // Lets prompt for this?
+        MapTool.getPlayer().getName().replaceAll(" ", "_")
+            + "@rptools.net"); // Lets prompt for this?
 
     // Set the user in the current context.
     Sentry.getContext().setUser(user.build());

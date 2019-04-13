@@ -46,7 +46,7 @@ import org.apache.commons.cli.ParseException;
 
 public class CreateVersionedInstallSplash extends Application {
   private static String resourceImage =
-      "net/rptools/maptool/client/image/maptool_splash_template_nerps.png";
+      "net/rptools/maptool/client/image/maptool_splash_template.png";
   private static String installImageOutputFilename =
       "../build-resources/jWrapper/maptool_installing_splash.png";
   private static String webOutputPath;

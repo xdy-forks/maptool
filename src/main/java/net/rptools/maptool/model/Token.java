@@ -44,12 +44,13 @@ import net.rptools.lib.image.ImageUtil;
 import net.rptools.lib.swing.SwingUtil;
 import net.rptools.lib.transferable.TokenTransferData;
 import net.rptools.maptool.client.AppUtil;
+import net.rptools.maptool.client.MapTool;
+import net.rptools.maptool.client.MapToolVariableResolver;
 import net.rptools.maptool.client.functions.JSONMacroFunctions;
 import net.rptools.maptool.client.ui.zone.ZoneRenderer.SelectionSet;
 import net.rptools.maptool.language.I18N;
 import net.rptools.maptool.util.ImageManager;
 import net.rptools.maptool.util.StringUtil;
-import net.rptools.maptool_fx.MapTool;
 import net.rptools.parser.ParserException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -145,15 +146,15 @@ public class Token extends BaseModel implements Cloneable {
 
   private Map<Class<? extends Grid>, GUID> sizeMap;
 
-  private boolean snapToGrid =
-      true; // Whether the token snaps to the current grid or is free floating
+  private boolean snapToGrid = true; // Whether the token snaps to the current grid or is free
+  // floating
 
   private boolean isVisible = true;
   private boolean visibleOnlyToOwner = false;
 
   private int vblAlphaSensitivity = -1;
-  private int alwaysVisibleTolerance =
-      2; // Default for # of regions (out of 9) that must be seen before token is shown over FoW
+  private int alwaysVisibleTolerance = 2; // Default for # of regions (out of 9) that must be seen
+  // before token is shown over FoW
   private boolean isAlwaysVisible = false; // Controls whether a Token is shown over VBL
   private Area vbl;
 
@@ -960,10 +961,6 @@ public class Token extends BaseModel implements Cloneable {
     this.y = y;
   }
 
-  public ZonePoint getZonePoint() {
-    return new ZonePoint(x, y);
-  }
-
   // Lee: added functions necessary for path computations
   public void setOriginPoint(ZonePoint p) {
     tokenOrigin = p;
@@ -1332,6 +1329,10 @@ public class Token extends BaseModel implements Cloneable {
   }
 
   public Object getEvaluatedProperty(String key) {
+    return getEvaluatedProperty(null, key);
+  }
+
+  public Object getEvaluatedProperty(MapToolVariableResolver resolver, String key) {
     Object val = getProperty(key);
     if (val == null) {
       // Global default ?
@@ -1367,7 +1368,7 @@ public class Token extends BaseModel implements Cloneable {
                 + getId()
                 + ")----------------------------------------------------------------------------------");
       }
-      val = MapTool.getParser().parseLine(this, val.toString());
+      val = MapTool.getParser().parseLine(resolver, this, val.toString());
     } catch (ParserException pe) {
       // pe.printStackTrace();
       val = val.toString();
@@ -1520,8 +1521,8 @@ public class Token extends BaseModel implements Cloneable {
     getMacroPropertiesMap(false).remove(prop.getIndex());
     MapTool.serverCommand()
         .putToken(MapTool.getFrame().getCurrentZoneRenderer().getZone().getId(), this);
-    MapTool.getFrame()
-        .resetTokenPanels(); // switched with above line to resolve panel render timing problem.
+    MapTool.getFrame().resetTokenPanels(); // switched with above line to resolve panel render
+    // timing problem.
 
     // Lets the token macro panels update only if a macro changes
     fireModelChangeEvent(new ModelChangeEvent(this, ChangeEvent.MACRO_CHANGED, id));
@@ -1825,10 +1826,9 @@ public class Token extends BaseModel implements Cloneable {
     for (MacroButtonProperties nextProp : tempMacros) {
       // Lee: maybe erasing the command will suffice to fix the hotkey bug.
       nextProp.setCommand("");
-      getMacroPropertiesMap(secure)
-          .remove(
-              nextProp
-                  .getIndex()); // switched with above line to resolve panel render timing problem.
+      getMacroPropertiesMap(secure).remove(nextProp.getIndex()); // switched with above line
+      // to resolve panel render
+      // timing problem.
     }
 
     MapTool.serverCommand()

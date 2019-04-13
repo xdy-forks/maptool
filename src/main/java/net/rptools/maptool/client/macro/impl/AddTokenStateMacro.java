@@ -17,6 +17,7 @@ package net.rptools.maptool.client.macro.impl;
 import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
+import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.MapToolMacroContext;
 import net.rptools.maptool.client.MapToolUtil;
 import net.rptools.maptool.client.macro.Macro;

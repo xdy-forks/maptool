@@ -18,13 +18,17 @@ import com.jeta.forms.gui.form.GridView;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
+import com.jidesoft.combobox.MultilineStringExComboBox;
+import com.jidesoft.combobox.PopupPanel;
 import com.jidesoft.grid.AbstractPropertyTableModel;
+import com.jidesoft.grid.MultilineStringCellEditor;
 import com.jidesoft.grid.Property;
 import com.jidesoft.grid.PropertyPane;
 import com.jidesoft.grid.PropertyTable;
 import com.jidesoft.swing.CheckBoxListWithSelectable;
 import com.jidesoft.swing.DefaultSelectable;
 import com.jidesoft.swing.Selectable;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -40,6 +44,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -48,10 +53,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TreeMap;
-import javafx.collections.ObservableList;
 import javax.swing.AbstractButton;
 import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
@@ -81,6 +87,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
@@ -97,6 +104,7 @@ import net.rptools.maptool.model.AssetManager;
 import net.rptools.maptool.model.Association;
 import net.rptools.maptool.model.Grid;
 import net.rptools.maptool.model.HeroLabData;
+import net.rptools.maptool.model.ObservableList;
 import net.rptools.maptool.model.Player;
 import net.rptools.maptool.model.Token;
 import net.rptools.maptool.model.Token.Type;
@@ -120,9 +128,10 @@ public class EditTokenDialog extends AbeillePanel<Token> {
   private GenericDialog dialog;
   private ImageAssetPanel imagePanel;
   // private CharSheetController controller;
-  private RSyntaxTextArea XMLstatblockRSyntaxTextArea = new RSyntaxTextArea(2, 2);
-  private RSyntaxTextArea TEXTstatblockRSyntaxTextArea = new RSyntaxTextArea(2, 2);
+  private final RSyntaxTextArea xmlStatblockRSyntaxTextArea = new RSyntaxTextArea(2, 2);
+  private final RSyntaxTextArea textStatblockRSyntaxTextArea = new RSyntaxTextArea(2, 2);
   private HeroLabData heroLabData;
+  private final WordWrapCellRenderer propertyCellRenderer = new WordWrapCellRenderer();
 
   private static final ImageIcon REFRESH_ICON_ON =
       new ImageIcon(
@@ -155,7 +164,8 @@ public class EditTokenDialog extends AbeillePanel<Token> {
   }
 
   public void initGMNotesTextArea() {
-    getGMNotesTextArea().addMouseListener(new MouseHandler(getGMNotesTextArea()));
+    if (MapTool.getPlayer().isGM())
+      getGMNotesTextArea().addMouseListener(new MouseHandler(getGMNotesTextArea()));
     getComponent("@GMNotes").setEnabled(MapTool.getPlayer().isGM());
   }
 
@@ -307,11 +317,11 @@ public class EditTokenDialog extends AbeillePanel<Token> {
       getHtmlStatblockEditor().setText(heroLabData.getStatBlock_html());
       getHtmlStatblockEditor().setCaretPosition(0);
 
-      XMLstatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_xml());
-      XMLstatblockRSyntaxTextArea.setCaretPosition(0);
+      xmlStatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_xml());
+      xmlStatblockRSyntaxTextArea.setCaretPosition(0);
 
-      TEXTstatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_text());
-      TEXTstatblockRSyntaxTextArea.setCaretPosition(0);
+      textStatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_text());
+      textStatblockRSyntaxTextArea.setCaretPosition(0);
 
       ((JCheckBox) getComponent("isAllyCheckBox")).setSelected(heroLabData.isAlly());
       ((JLabel) getComponent("summaryText")).setText(heroLabData.getSummary());
@@ -512,8 +522,11 @@ public class EditTokenDialog extends AbeillePanel<Token> {
     public void stateChanged(ChangeEvent e) {
       JSlider source = (JSlider) e.getSource();
       if (!source.getValueIsAdjusting()) {
-        int value = (int) source.getValue();
-        getTokenOpacityValueLabel().setText(new BigDecimal(value).toString() + "%");
+        BigDecimal value = new BigDecimal(source.getValue());
+        getTokenOpacityValueLabel().setText(value.toString() + "%");
+        float opacity = value.divide(new BigDecimal(100)).floatValue();
+        getTokenIconPanel().setOpacity(opacity);
+        getTokenIconPanel().repaint();
       }
     }
   }
@@ -878,6 +891,18 @@ public class EditTokenDialog extends AbeillePanel<Token> {
     return (JButton) getComponent("clearVblButton");
   }
 
+  public JButton getTransferVblToMap() {
+    return (JButton) getComponent("transferVblToMap");
+  }
+
+  public JButton getTransferVblFromMap() {
+    return (JButton) getComponent("transferVblFromMap");
+  }
+
+  public JCheckBox getCopyOrMoveCheckbox() {
+    return (JCheckBox) getComponent("copyOrMoveCheckbox");
+  }
+
   public JCheckBox getHideTokenCheckbox() {
     return (JCheckBox) getComponent("hideTokenCheckbox");
   }
@@ -944,10 +969,24 @@ public class EditTokenDialog extends AbeillePanel<Token> {
     propertyTable.setFillsViewportHeight(true); // XXX This is Java6-only -- need Java5 solution
     propertyTable.setName("propertiesTable");
 
+    // wrap button and functionality
+    JPanel buttonsAndPropertyTable = new JPanel();
+    buttonsAndPropertyTable.setLayout(new BorderLayout());
+    JCheckBox wrapToggle = new JCheckBox(I18N.getString("EditTokenDialog.msg.wrap"));
+    wrapToggle.addActionListener(
+        new ActionListener() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+            propertyCellRenderer.setLineWrap(wrapToggle.isSelected());
+            propertyTable.repaint();
+          }
+        });
+    buttonsAndPropertyTable.add(wrapToggle, BorderLayout.PAGE_END);
+
     PropertyPane pane = new PropertyPane(propertyTable);
     // pane.setPreferredSize(new Dimension(100, 300));
-
-    replaceComponent("propertiesPanel", "propertiesTable", pane);
+    buttonsAndPropertyTable.add(pane, BorderLayout.CENTER);
+    replaceComponent("propertiesPanel", "propertiesTable", buttonsAndPropertyTable);
   }
 
   public void initTokenDetails() {
@@ -1040,6 +1079,76 @@ public class EditTokenDialog extends AbeillePanel<Token> {
 
                 vblPanel.setTokenVBL(null);
                 vblPanel.setAutoGenerated(false);
+                getTokenVblPanel().repaint();
+              }
+            });
+
+    getTransferVblToMap()
+        .addActionListener(
+            new ActionListener() {
+              public void actionPerformed(ActionEvent e) {
+                if (vblPanel.getTokenVBL() != null) {
+                  if (getCopyOrMoveCheckbox().isSelected())
+                    if (!MapTool.confirm("EditTokenDialog.confirm.vbl.clearVBL")) return;
+
+                  TokenVBL.renderVBL(
+                      MapTool.getFrame().getCurrentZoneRenderer(),
+                      vblPanel.getToken().getTransformedVBL(vblPanel.getTokenVBL()),
+                      false);
+                  // MapTool.getFrame().getCurrentZoneRenderer().getZone().tokenTopologyChanged();
+
+                  if (getCopyOrMoveCheckbox().isSelected()) {
+                    vblPanel.setTokenVBL(null);
+                    vblPanel.setAutoGenerated(false);
+                    getTokenVblPanel().repaint();
+                  }
+                }
+              }
+            });
+
+    getTransferVblFromMap()
+        .addActionListener(
+            new ActionListener() {
+              public void actionPerformed(ActionEvent e) {
+                Area mapVBL =
+                    TokenVBL.getMapVBL_transformed(
+                        MapTool.getFrame().getCurrentZoneRenderer(), vblPanel.getToken());
+
+                vblPanel.setTokenVBL(mapVBL);
+                vblPanel.setAutoGenerated(false);
+
+                if (getCopyOrMoveCheckbox().isSelected()) {
+                  Area newTokenVBL =
+                      TokenVBL.getVBL_underToken(
+                          MapTool.getFrame().getCurrentZoneRenderer(), vblPanel.getToken());
+                  TokenVBL.renderVBL(
+                      MapTool.getFrame().getCurrentZoneRenderer(), newTokenVBL, true);
+                }
+
+                getTokenVblPanel().repaint();
+              }
+            });
+
+    getCopyOrMoveCheckbox()
+        .addActionListener(
+            new ActionListener() {
+              public void actionPerformed(ActionEvent e) {
+                if (getCopyOrMoveCheckbox().isSelected()) {
+                  getTransferVblFromMap()
+                      .setText(
+                          I18N.getString("token.properties.button.transferVblFromMap.move.text"));
+                  getTransferVblToMap()
+                      .setText(
+                          I18N.getString("token.properties.button.transferVblToMap.move.text"));
+                } else {
+                  getTransferVblFromMap()
+                      .setText(
+                          I18N.getString("token.properties.button.transferVblFromMap.copy.text"));
+                  getTransferVblToMap()
+                      .setText(
+                          I18N.getString("token.properties.button.transferVblToMap.copy.text"));
+                }
+
                 getTokenVblPanel().repaint();
               }
             });
@@ -1173,30 +1282,29 @@ public class EditTokenDialog extends AbeillePanel<Token> {
     statblockDoc.putProperty("IgnoreCharsetDirective", true);
 
     // Setup the XML panel
-    XMLstatblockRSyntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
-    XMLstatblockRSyntaxTextArea.setEditable(false);
-    XMLstatblockRSyntaxTextArea.setCodeFoldingEnabled(true);
-    XMLstatblockRSyntaxTextArea.setLineWrap(true);
-    XMLstatblockRSyntaxTextArea.setWrapStyleWord(true);
-    XMLstatblockRSyntaxTextArea.setTabSize(2);
+    xmlStatblockRSyntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+    xmlStatblockRSyntaxTextArea.setEditable(false);
+    xmlStatblockRSyntaxTextArea.setCodeFoldingEnabled(true);
+    xmlStatblockRSyntaxTextArea.setLineWrap(true);
+    xmlStatblockRSyntaxTextArea.setWrapStyleWord(true);
+    xmlStatblockRSyntaxTextArea.setTabSize(2);
 
-    RTextScrollPane xmlStatblockRSyntaxScrollPane =
-        new RTextScrollPane(XMLstatblockRSyntaxTextArea);
-    xmlStatblockRSyntaxScrollPane.setLineNumbersEnabled(false);
+    RTextScrollPane xmlStatblockRTextScrollPane = new RTextScrollPane(xmlStatblockRSyntaxTextArea);
+    xmlStatblockRTextScrollPane.setLineNumbersEnabled(false);
     replaceComponent(
-        "xmlStatblockPanel", "XMLstatblockRTextScrollPane", xmlStatblockRSyntaxScrollPane);
+        "xmlStatblockPanel", "xmlStatblockRTextScrollPane", xmlStatblockRTextScrollPane);
 
     // Setup the TEXT panel
-    TEXTstatblockRSyntaxTextArea.setEditable(false);
-    TEXTstatblockRSyntaxTextArea.setLineWrap(true);
-    TEXTstatblockRSyntaxTextArea.setWrapStyleWord(true);
-    TEXTstatblockRSyntaxTextArea.setTabSize(2);
+    textStatblockRSyntaxTextArea.setEditable(false);
+    textStatblockRSyntaxTextArea.setLineWrap(true);
+    textStatblockRSyntaxTextArea.setWrapStyleWord(true);
+    textStatblockRSyntaxTextArea.setTabSize(2);
 
-    RTextScrollPane TEXTstatblockRTextScrollPane =
-        new RTextScrollPane(TEXTstatblockRSyntaxTextArea);
-    TEXTstatblockRTextScrollPane.setLineNumbersEnabled(false);
+    RTextScrollPane textStatblockRTextScrollPane =
+        new RTextScrollPane(textStatblockRSyntaxTextArea);
+    textStatblockRTextScrollPane.setLineNumbersEnabled(false);
     replaceComponent(
-        "textStatblockPanel", "TextStatblockRTextScrollPane", TEXTstatblockRTextScrollPane);
+        "textStatblockPanel", "textStatblockRTextScrollPane", textStatblockRTextScrollPane);
 
     // Setup the refresh button, #refreshes the HeroLabData from the portfolio
     JButton refreshDataButton = (JButton) getComponent("refreshDataButton");
@@ -1221,11 +1329,11 @@ public class EditTokenDialog extends AbeillePanel<Token> {
                 getHtmlStatblockEditor().setText(heroLabData.getStatBlock_html());
                 getHtmlStatblockEditor().setCaretPosition(0);
 
-                XMLstatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_xml());
-                XMLstatblockRSyntaxTextArea.setCaretPosition(0);
+                xmlStatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_xml());
+                xmlStatblockRSyntaxTextArea.setCaretPosition(0);
 
-                TEXTstatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_text());
-                TEXTstatblockRSyntaxTextArea.setCaretPosition(0);
+                textStatblockRSyntaxTextArea.setText(heroLabData.getStatBlock_text());
+                textStatblockRSyntaxTextArea.setCaretPosition(0);
 
                 // Update the images
                 MD5Key tokenImageKey = heroLabData.getTokenImage();
@@ -1264,6 +1372,7 @@ public class EditTokenDialog extends AbeillePanel<Token> {
 
     xmlStatblockSearchTextField.addKeyListener(
         new KeyAdapter() {
+          @Override
           public void keyPressed(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
               xmlStatblockSearchButton.doClick();
@@ -1279,8 +1388,8 @@ public class EditTokenDialog extends AbeillePanel<Token> {
 
             if (searchText.isEmpty()) return;
 
-            XMLstatblockRSyntaxTextArea.setText(heroLabData.parseXML(searchText));
-            XMLstatblockRSyntaxTextArea.setCaretPosition(0);
+            xmlStatblockRSyntaxTextArea.setText(heroLabData.parseXML(searchText));
+            xmlStatblockRSyntaxTextArea.setCaretPosition(0);
           }
         });
 
@@ -1291,6 +1400,7 @@ public class EditTokenDialog extends AbeillePanel<Token> {
 
     textStatblockSearchTextField.addKeyListener(
         new KeyAdapter() {
+          @Override
           public void keyPressed(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
               textStatblockSearchButton.doClick();
@@ -1313,7 +1423,7 @@ public class EditTokenDialog extends AbeillePanel<Token> {
             // context.setSearchForward(forward);
             // context.setWholeWord(false);
 
-            boolean found = SearchEngine.find(TEXTstatblockRSyntaxTextArea, context).wasFound();
+            SearchEngine.find(textStatblockRSyntaxTextArea, context).wasFound();
           }
         });
   }
@@ -1432,13 +1542,16 @@ public class EditTokenDialog extends AbeillePanel<Token> {
     }
 
     class EditTokenProperty extends Property {
+
       private static final long serialVersionUID = 4129033551005743554L;
 
       private final String key;
 
       public EditTokenProperty(String key) {
         super(key, key, String.class, (String) getPropertyTypeCombo().getSelectedItem());
+        this.setTableCellRenderer(propertyCellRenderer);
         this.key = key;
+        setCellEditor(new MTMultilineStringCellEditor());
       }
 
       @Override
@@ -1616,6 +1729,125 @@ public class EditTokenDialog extends AbeillePanel<Token> {
         map.put(row.getLeft(), row.getRight());
       }
       return map;
+    }
+  }
+
+  // needed to change the popup for properties
+  private static class MTMultilineStringExComboBox extends MultilineStringExComboBox {
+    final ResourceBundle a = ResourceBundle.getBundle("com.jidesoft.combobox.combobox");
+
+    public ResourceBundle getResourceBundle(Locale paramLocale) {
+      return ResourceBundle.getBundle("com.jidesoft.combobox.combobox", paramLocale);
+    }
+
+    public PopupPanel createPopupComponent() {
+      MTMultilineStringPopupPanel pp =
+          new MTMultilineStringPopupPanel(
+              getResourceBundle(Locale.getDefault()).getString("ComboBox.multilineStringTitle"));
+      return pp;
+    }
+  }
+
+  // the cell editor for property popups
+  private static class MTMultilineStringCellEditor extends MultilineStringCellEditor {
+    protected MTMultilineStringExComboBox createMultilineStringComboBox() {
+      MTMultilineStringExComboBox localMultilineStringExComboBox =
+          new MTMultilineStringExComboBox();
+      localMultilineStringExComboBox.setEditable(true);
+      return localMultilineStringExComboBox;
+    }
+  }
+
+  // the property popup table
+  private static class MTMultilineStringPopupPanel extends PopupPanel {
+    private RSyntaxTextArea j = createTextArea();
+
+    public MTMultilineStringPopupPanel() {
+      this("");
+    }
+
+    public MTMultilineStringPopupPanel(String paramString) {
+      this.setResizable(true);
+      JScrollPane localJScrollPane = new RTextScrollPane(j);
+      localJScrollPane.setVerticalScrollBarPolicy(22);
+      localJScrollPane.setAutoscrolls(true);
+      localJScrollPane.setPreferredSize(new Dimension(300, 200));
+      setBorder(BorderFactory.createEmptyBorder(10, 5, 5, 5));
+      setLayout(new BorderLayout());
+      setTitle(paramString);
+      add(localJScrollPane, "Center");
+      setDefaultFocusComponent(j);
+      j.setLineWrap(false);
+      JCheckBox wrapToggle = new JCheckBox(I18N.getString("EditTokenDialog.msg.wrap"));
+      wrapToggle.addActionListener(
+          new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+              j.setLineWrap(!j.getLineWrap());
+            }
+          });
+
+      DefaultComboBoxModel syntaxListModel = new DefaultComboBoxModel();
+      syntaxListModel.addElement(SyntaxConstants.SYNTAX_STYLE_NONE);
+      syntaxListModel.addElement(SyntaxConstants.SYNTAX_STYLE_JSON);
+      syntaxListModel.addElement(SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE);
+      syntaxListModel.addElement(SyntaxConstants.SYNTAX_STYLE_HTML);
+      syntaxListModel.addElement(SyntaxConstants.SYNTAX_STYLE_XML);
+      JComboBox syntaxComboBox = new JComboBox(syntaxListModel);
+      syntaxComboBox.addActionListener(
+          new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+              j.setSyntaxEditingStyle(syntaxComboBox.getSelectedItem().toString());
+            }
+          });
+
+      // content.add(wrapToggle);
+      add(syntaxComboBox, BorderLayout.BEFORE_FIRST_LINE);
+      add(wrapToggle, BorderLayout.AFTER_LAST_LINE);
+    }
+
+    public Object getSelectedObject() {
+      return j.getText();
+    }
+
+    public void setSelectedObject(Object paramObject) {
+      if (paramObject != null) {
+        j.setText(paramObject.toString());
+        if (PopupPanel.i == 0) {}
+      } else {
+        j.setText("");
+      }
+    }
+
+    protected RSyntaxTextArea createTextArea() {
+      RSyntaxTextArea textArea = new RSyntaxTextArea();
+      textArea.setAnimateBracketMatching(true);
+      textArea.setBracketMatchingEnabled(true);
+      textArea.setLineWrap(false);
+      textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+      return textArea;
+    }
+  }
+
+  // cell renderer for properties table
+  private static class WordWrapCellRenderer extends RSyntaxTextArea implements TableCellRenderer {
+    WordWrapCellRenderer() {
+      setLineWrap(false);
+      setWrapStyleWord(true);
+    }
+
+    public Component getTableCellRendererComponent(
+        JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+      if (value == null) {
+        value = "";
+      }
+      setText(value.toString());
+      setSize(table.getColumnModel().getColumn(column).getWidth(), getPreferredSize().height);
+      if (table.getRowHeight(row) != getPreferredSize().height) {
+        table.setRowHeight(row, getPreferredSize().height);
+      }
+      return this;
     }
   }
 }

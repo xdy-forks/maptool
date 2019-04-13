@@ -29,6 +29,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.walker.AbstractZoneWalker;
 import net.rptools.maptool.model.CellPoint;
 import net.rptools.maptool.model.GUID;
@@ -100,9 +101,9 @@ public abstract class AbstractAStarWalker extends AbstractZoneWalker {
 
   protected abstract double getDiagonalMultiplier(int[] neighborArray);
 
-  public int getDistance() {
+  public double getDistance() {
     if (distance < 0) return 0;
-    else return (int) distance;
+    else return distance;
   }
 
   public Collection<AStarCellPoint> getCheckedPoints() {

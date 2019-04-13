@@ -290,8 +290,7 @@ public class CampaignProperties {
   // @formatter:off
   private static final Object[][] starter =
       new Object[][] {
-        // Sight Type Name                    Dist        Mult        Arc        LtSrc        Shape
-        //               Scale
+        // Sight Type Name					Dist		Mult		Arc		LtSrc		Shape				Scale
         {"Normal", 0.0, 1.0, 0, null, null, false},
         {"Lowlight", 0.0, 2.0, 0, null, null, false},
         {"Grid Vision", 0.0, 1.0, 0, null, ShapeType.GRID, true},

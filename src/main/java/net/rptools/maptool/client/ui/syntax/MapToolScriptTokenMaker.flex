@@ -1,6 +1,12 @@
 /*
- * Generated on 9/4/17 2:19 PM
+ * This software Copyright by the RPTools.net development team, and licensed under the Affero GPL Version 3 or, at your option, any later version.
+ *
+ * MapTool Source Code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * You should have received a copy of the GNU Affero General Public License * along with this source Code. If not, please visit <http://www.gnu.org/licenses/> and specifically the Affero license text
+ * at <http://www.gnu.org/licenses/agpl.html>.
  */
+
 package net.rptools.maptool.client.ui.syntax;
 
 import java.io.*;
@@ -11,7 +17,10 @@ import org.fife.ui.rsyntaxtextarea.*;
 
 /**
  * Auto-generated source created using TokenMakerMaker
-https://github.com/bobbylight/TokenMakerMaker
+ * https://github.com/bobbylight/TokenMakerMaker
+ *
+ * NOTE: Run JFlex using this as -skel input then removed extra methods in generated output
+ *
  */
 %%
 
@@ -142,6 +151,8 @@ https://github.com/bobbylight/TokenMakerMaker
 	 *
 	 * @return      <code>true</code> if EOF was reached, otherwise
 	 *              <code>false</code>.
+	 *
+	 * NOTE: Keep this method version and remove the other zzRefill() after JFlex generation. -Jamz 
 	 */
 	private boolean zzRefill() {
 		return zzCurrentPos>=s.offset+s.count;
@@ -156,7 +167,9 @@ https://github.com/bobbylight/TokenMakerMaker
 	 * <b>cannot</b> be reused (internal buffer is discarded and lost).
 	 * Lexical state is set to <tt>YY_INITIAL</tt>.
 	 *
-	 * @param reader   the new input stream 
+	 * @param reader   the new input stream
+	 *
+	 * NOTE: Keep this method version and remove the other yyreset(Reader reader) after JFlex generation. -Jamz 
 	 */
 	public final void yyreset(Reader reader) {
 		// 's' has been updated.
@@ -180,24 +193,24 @@ https://github.com/bobbylight/TokenMakerMaker
 
 %}
 
-Letter							= [A-Za-z]
-LetterOrUnderscore				= ({Letter}|"_")
-NonzeroDigit						= [1-9]
-Digit							= ("0"|{NonzeroDigit})
-HexDigit							= ({Digit}|[A-Fa-f])
-OctalDigit						= ([0-7])
+Letter									= [A-Za-z]
+LetterOrUnderscore						= ({Letter}|"_")
+NonzeroDigit							= [1-9]
+Digit									= ("0"|{NonzeroDigit})
+HexDigit								= ({Digit}|[A-Fa-f])
+OctalDigit								= ([0-7])
 AnyCharacterButApostropheOrBackSlash	= ([^\\'])
 AnyCharacterButDoubleQuoteOrBackSlash	= ([^\\\"\n])
-EscapedSourceCharacter				= ("u"{HexDigit}{HexDigit}{HexDigit}{HexDigit})
-Escape							= ("\\"(([btnfr\"'\\])|([0123]{OctalDigit}?{OctalDigit}?)|({OctalDigit}{OctalDigit}?)|{EscapedSourceCharacter}))
-NonSeparator						= ([^\t\f\r\n\ \(\)\{\}\[\]\;\,\.\=\>\<\!\~\?\:\+\-\*\/\&\|\^\%\"\']|"#"|"\\")
-IdentifierStart					= ({LetterOrUnderscore}|"$")
-IdentifierPart						= ({IdentifierStart}|{Digit}|("\\"{EscapedSourceCharacter}))
+EscapedSourceCharacter					= ("u"{HexDigit}{HexDigit}{HexDigit}{HexDigit})
+Escape									= ("\\"(([btnfr\"'\\])|([0123]{OctalDigit}?{OctalDigit}?)|({OctalDigit}{OctalDigit}?)|{EscapedSourceCharacter}))
+NonSeparator							= ([^\t\f\r\n\ \(\)\{\}\[\]\;\,\.\=\>\<\!\~\?\:\+\-\*\/\&\|\^\%\"\']|"#"|"\\")
+IdentifierStart							= ({LetterOrUnderscore}|"$")
+IdentifierPart							= ({IdentifierStart}|{Digit}|\.|("\\"{EscapedSourceCharacter}))
 
 LineTerminator				= (\n)
-WhiteSpace				= ([ \t\f]+)
+WhiteSpace					= ([ \t\f]+)
 
-CharLiteral	= ([\']({AnyCharacterButApostropheOrBackSlash}|{Escape})[\'])
+CharLiteral					= ([\']({AnyCharacterButApostropheOrBackSlash}|{Escape})[\'])
 UnclosedCharLiteral			= ([\'][^\'\n]*)
 ErrorCharLiteral			= ({UnclosedCharLiteral}[\'])
 StringLiteral				= ([\"]({AnyCharacterButDoubleQuoteOrBackSlash}|{Escape})*[\"])
@@ -205,29 +218,29 @@ UnclosedStringLiteral		= ([\"]([\\].|[^\\\"])*[^\"]?)
 ErrorStringLiteral			= ({UnclosedStringLiteral}[\"])
 
 MLCBegin					= "<!--"
-MLCEnd					= "-->"
+MLCEnd						= "-->"
 
 /* No documentation comments */
 /* No line comments */
 
-IntegerLiteral			= ({Digit}+)
-HexLiteral			= (0x{HexDigit}+)
-FloatLiteral			= (({Digit}+)("."{Digit}+)?(e[+-]?{Digit}+)? | ({Digit}+)?("."{Digit}+)(e[+-]?{Digit}+)?)
+IntegerLiteral				= ({Digit}+)
+HexLiteral					= (0x{HexDigit}+)
+FloatLiteral				= (({Digit}+)("."{Digit}+)?(e[+-]?{Digit}+)? | ({Digit}+)?("."{Digit}+)(e[+-]?{Digit}+)?)
 ErrorNumberFormat			= (({IntegerLiteral}|{HexLiteral}|{FloatLiteral}){NonSeparator}+)
 BooleanLiteral				= ("true"|"false")
 
 Separator					= ([\(\)\{\}\[\]])
-Separator2				= ([\;,.])
+Separator2					= ([\;,.])
 
-Identifier				= ({IdentifierStart}{IdentifierPart}*)
+Identifier					= ({IdentifierStart}{IdentifierPart}*)
 
-URLGenDelim				= ([:\/\?#\[\]@])
-URLSubDelim				= ([\!\$&'\(\)\*\+,;=])
-URLUnreserved			= ({LetterOrUnderscore}|{Digit}|[\-\.\~])
-URLCharacter			= ({URLGenDelim}|{URLSubDelim}|{URLUnreserved}|[%])
-URLCharacters			= ({URLCharacter}*)
-URLEndCharacter			= ([\/\$]|{Letter}|{Digit})
-URL						= (((https?|f(tp|ile))"://"|"www.")({URLCharacters}{URLEndCharacter})?)
+URLGenDelim					= ([:\/\?#\[\]@])
+URLSubDelim					= ([\!\$&'\(\)\*\+,;=])
+URLUnreserved				= ({LetterOrUnderscore}|{Digit}|[\-\.\~])
+URLCharacter				= ({URLGenDelim}|{URLSubDelim}|{URLUnreserved}|[%])
+URLCharacters				= ({URLCharacter}*)
+URLEndCharacter				= ([\/\$]|{Letter}|{Digit})
+URL							= (((https?|f(tp|ile))"://"|"www.")({URLCharacters}{URLEndCharacter})?)
 
 
 /* No string state */
@@ -240,493 +253,13 @@ URL						= (((https?|f(tp|ile))"://"|"www.")({URLCharacters}{URLEndCharacter})?)
 
 <YYINITIAL> {
 
-	/* Keywords */
-	"c" |
-"code" |
-"count" |
-"dialog" |
-"e" |
-"expanded" |
-"for" |
-"foreach" |
-"frame" |
-"g" |
-"gm" |
-"gmtt" |
-"gt" |
-"h" |
-"hidden" |
-"hide" |
-"if" |
-"macro" |
-"r" |
-"result" |
-"s" |
-"self" |
-"selftt" |
-"st" |
-"switch" |
-"t" |
-"token" |
-"tooltip" |
-"u" |
-"unformatted" |
-"w" |
-"while" |
-"whisper"		{ addToken(Token.RESERVED_WORD); }
+	/* Keywords dynamically added via MapToolScriptSyntax class */
 
-	/* Keywords 2 (just an optional set of keywords colored differently) */
-	"onCampaignLoad" |
-"onChangeSelection" |
-"onMouseOverEvent" |
-"onMultipleTokensMove" |
-"onTokenMove"		{ addToken(Token.RESERVED_WORD_2); }
+	/* Keywords 2 (just an optional set of keywords colored differently) dynamically added via MapToolScriptSyntax class */
 
-	/* Data types */
-	"bar.name" |
-"macro.args" |
-"macro.return" |
-"roll.count" |
-"roll.result" |
-"state.name" |
-"token.gm name" |
-"token.halo" |
-"token.init" |
-"token.initHold" |
-"token.label" |
-"token.name" |
-"token.visible" |
-"tokens.denyMove" |
-"tokens.moveCount"		{ addToken(Token.DATA_TYPE); }
+	/* Data types dynamically added via MapToolScriptSyntax class */
 
-	/* Functions */
-	"abort" |
-"abs" |
-"absolutevalue" |
-"add" |
-"addAllNPCsToInitiative" |
-"addAllPCsToInitiative" |
-"addAllToInitiative" |
-"addTableEntry" |
-"addToInitiative" |
-"arg" |
-"argCount" |
-"assert" |
-"average" |
-"avg" |
-"band" |
-"bitwiseand" |
-"bitwisenot" |
-"bitwiseor" |
-"bitwisexor" |
-"bnot" |
-"bor" |
-"bringDrawingToFront" |
-"bringToFront" |
-"broadcast" |
-"bxor" |
-"canSeeToken" |
-"ceil" |
-"ceiling" |
-"clearLights" |
-"clearTable" |
-"closeDialog" |
-"closeFrame" |
-"concat" |
-"copyMap" |
-"copyTable" |
-"copyToken" |
-"countStrProp" |
-"countsuccess" |
-"createMacro" |
-"createTable" |
-"currentToken" |
-"decode" |
-"defineFunction" |
-"deleteStrProp" |
-"deleteTable" |
-"deleteTableEntry" |
-"deselectTokens" |
-"dice" |
-"divide" |
-"drawVBL" |
-"drop" |
-"encode" |
-"endsWith" |
-"eraseVBL" |
-"eval" |
-"evalMacro" |
-"execLink" |
-"execMacro" |
-"explode" |
-"explodingSuccess" |
-"exportData" |
-"exposeAllOwnedArea" |
-"exposeFOW" |
-"exposeFogAtWaypoints" |
-"exposePCOnlyArea" |
-"findToken" |
-"floor" |
-"formatStrProp" |
-"fudge" |
-"getAllMapNames" |
-"getAllPlayerNames" |
-"getAllPropertyNames" |
-"getAlwaysVisible" |
-"getBar" |
-"getCurrentInitiative" |
-"getCurrentMapName" |
-"getDistance" |
-"getDistanceToXY" |
-"getDrawingLayer" |
-"getEnvironmentVariable" |
-"getExposedTokenNames" |
-"getExposedTokens" |
-"getFindCount" |
-"getGMName" |
-"getGMNotes" |
-"getGroup" |
-"getGroupCount" |
-"getGroupEnd" |
-"getGroupStart" |
-"getHalo" |
-"getImage" |
-"getImpersonated" |
-"getImpersonatedName" |
-"getInfo" |
-"getInitiative" |
-"getInitiativeHold" |
-"getInitiativeList" |
-"getInitiativeRound" |
-"getInitiativeToken" |
-"getLabel" |
-"getLastPath" |
-"getLayer" |
-"getLibProperty" |
-"getLibPropertyNames" |
-"getLights" |
-"getMacroButtonIndex" |
-"getMacroCommand" |
-"getMacroContext" |
-"getMacroGroup" |
-"getMacroIndexes" |
-"getMacroLocation" |
-"getMacroName" |
-"getMacroProps" |
-"getMacros" |
-"getMapVisible" |
-"getMatchingLibProperties" |
-"getMatchingProperties" |
-"getMaxLoopIterations" |
-"getMaxRecursionDepth" |
-"getMoveCount" |
-"getNPC" |
-"getNPCNames" |
-"getName" |
-"getNotes" |
-"getOwned" |
-"getOwnedNames" |
-"getOwnerOnlyVisible" |
-"getOwners" |
-"getPC" |
-"getPCNames" |
-"getPlayerName" |
-"getProperty" |
-"getPropertyDefault" |
-"getPropertyNames" |
-"getPropertyNamesRaw" |
-"getPropertyType" |
-"getRawProperty" |
-"getRecursionDepth" |
-"getSelected" |
-"getSelectedNames" |
-"getSightType" |
-"getSize" |
-"getSpeech" |
-"getSpeechNames" |
-"getState" |
-"getStateImage" |
-"getStrProp" |
-"getTableAccess" |
-"getTableImage" |
-"getTableNames" |
-"getTableRoll" |
-"getTableVisible" |
-"getTokenDrawOrder" |
-"getTokenFacing" |
-"getTokenHandout" |
-"getTokenHeight" |
-"getTokenImage" |
-"getTokenNames" |
-"getTokenPortrait" |
-"getTokenRotation" |
-"getTokenShape" |
-"getTokenStates" |
-"getTokenVBL" |
-"getTokenWidth" |
-"getTokenX" |
-"getTokenY" |
-"getTokens" |
-"getVBL" |
-"getViewArea" |
-"getVisible" |
-"getVisibleMapNames" |
-"getVisibleTokenNames" |
-"getVisibleTokens" |
-"getWithState" |
-"getWithStateNames" |
-"getZoom" |
-"goto" |
-"hasImpersonated" |
-"hasLightSource" |
-"hasMacro" |
-"hasProperty" |
-"hasSight" |
-"hero" |
-"herobody" |
-"herolab.XPath" |
-"herolab.getImage" |
-"herolab.getInfo" |
-"herolab.getMasterName" |
-"herolab.getStatBlock" |
-"herolab.hasChanged" |
-"herolab.isMinion" |
-"herolab.refresh" |
-"herostun" |
-"hex" |
-"hypot" |
-"hypotenuse" |
-"if" |
-"indexKeyStrProp" |
-"indexOf" |
-"indexValueStrProp" |
-"initiativeSize" |
-"input" |
-"isBarVisible" |
-"isDialogVisible" |
-"isFrameVisible" |
-"isFunctionDefined" |
-"isGM" |
-"isNPC" |
-"isNumber" |
-"isOwnedByAll" |
-"isOwner" |
-"isPC" |
-"isPropertyEmpty" |
-"isSnapToGrid" |
-"isTrusted" |
-"isVisible" |
-"js.eval" |
-"js.evala" |
-"json.append" |
-"json.contains" |
-"json.count" |
-"json.difference" |
-"json.equals" |
-"json.evaluate" |
-"json.fields" |
-"json.fromList" |
-"json.fromStrProp" |
-"json.get" |
-"json.indent" |
-"json.indexOf" |
-"json.intersection" |
-"json.isEmpty" |
-"json.isSubset" |
-"json.length" |
-"json.merge" |
-"json.objrolls" |
-"json.remove" |
-"json.removeAll" |
-"json.removeFirst" |
-"json.reverse" |
-"json.rolls" |
-"json.set" |
-"json.shuffle" |
-"json.sort" |
-"json.toList" |
-"json.toStrProp" |
-"json.type" |
-"json.union" |
-"json.unique" |
-"keep" |
-"lastIndexOf" |
-"length" |
-"listAppend" |
-"listContains" |
-"listCount" |
-"listDelete" |
-"listFind" |
-"listFormat" |
-"listGet" |
-"listInsert" |
-"listReplace" |
-"listSort" |
-"ln" |
-"log" |
-"log10" |
-"lower" |
-"macroLink" |
-"macroLinkText" |
-"matches" |
-"math.abs" |
-"math.acos" |
-"math.acos_r" |
-"math.asin" |
-"math.asin_r" |
-"math.atan" |
-"math.atan2" |
-"math.atan2_r" |
-"math.atan_r" |
-"math.cbrt" |
-"math.ceil" |
-"math.cos" |
-"math.cos_r" |
-"math.cuberoot" |
-"math.e" |
-"math.floor" |
-"math.hypot" |
-"math.hypotenuse" |
-"math.isEven" |
-"math.isInt" |
-"math.isOdd" |
-"math.log" |
-"math.log10" |
-"math.max" |
-"math.min" |
-"math.mod" |
-"math.pi" |
-"math.pow" |
-"math.sin" |
-"math.sin_r" |
-"math.sqrt" |
-"math.squareroot" |
-"math.tan" |
-"math.tan_r" |
-"math.toDegrees" |
-"math.toRadians" |
-"max" |
-"mean" |
-"median" |
-"min" |
-"mod" |
-"moveToken" |
-"moveTokenFromMap" |
-"moveTokenToMap" |
-"movedOverPoints" |
-"movedOverToken" |
-"multiply" |
-"nextInitiative" |
-"number" |
-"oldFunction" |
-"openTest" |
-"pow" |
-"power" |
-"removeAllFromInitiative" |
-"removeAllNPCsFromInitiative" |
-"removeAllPCsFromInitiative" |
-"removeFromInitiative" |
-"removeMacro" |
-"removeToken" |
-"removeTokenFacing" |
-"replace" |
-"requestURL" |
-"reroll" |
-"resetFrame" |
-"resetProperty" |
-"restoreFoW" |
-"roll" |
-"round" |
-"selectTokens" |
-"sendDrawingToBack" |
-"sendToBack" |
-"sendURL" |
-"set" |
-"setAllStates" |
-"setAlwaysVisible" |
-"setBar" |
-"setBarVisible" |
-"setCurrentInitiative" |
-"setCurrentMap" |
-"setDrawingLayer" |
-"setGMName" |
-"setGMNotes" |
-"setHalo" |
-"setHasSight" |
-"setInitiative" |
-"setInitiativeHold" |
-"setInitiativeRound" |
-"setLabel" |
-"setLayer" |
-"setLibProperty" |
-"setLight" |
-"setMacroCommand" |
-"setMacroProps" |
-"setMapName" |
-"setMapVisible" |
-"setMaxLoopIterations" |
-"setMaxRecursionDepth" |
-"setNPC" |
-"setName" |
-"setNotes" |
-"setOwnedByAll" |
-"setOwner" |
-"setOwnerOnlyVisible" |
-"setPC" |
-"setProperty" |
-"setPropertyType" |
-"setSightType" |
-"setSize" |
-"setSpeech" |
-"setState" |
-"setStrProp" |
-"setTableAccess" |
-"setTableEntry" |
-"setTableImage" |
-"setTableRoll" |
-"setTableVisible" |
-"setTokenDrawOrder" |
-"setTokenFacing" |
-"setTokenHandout" |
-"setTokenImage" |
-"setTokenOpacity" |
-"setTokenPortrait" |
-"setTokenShape" |
-"setTokenSnapToGrid" |
-"setTokenVBL" |
-"setTokenWidth" |
-"setViewArea" |
-"setVisible" |
-"setZoom" |
-"sortInitiative" |
-"sqr" |
-"sqrt" |
-"square" |
-"squareroot" |
-"sr4" |
-"sr4e" |
-"startsWith" |
-"strPropFromVars" |
-"strfind" |
-"strformat" |
-"string" |
-"stringToList" |
-"substring" |
-"subtract" |
-"success" |
-"sum" |
-"switchToken" |
-"table" |
-"tableImage" |
-"tbl" |
-"tblImage" |
-"toggleFoW" |
-"transferVBL" |
-"trim" |
-"u" |
-"ubiquity" |
-"upper" |
-"varsFromStrProp"		{ addToken(Token.FUNCTION); }
+	/* functions dynamically added via MapToolScriptSyntax class */
 
 	{BooleanLiteral}			{ addToken(Token.LITERAL_BOOLEAN); }
 
@@ -754,24 +287,6 @@ URL						= (((https?|f(tp|ile))"://"|"www.")({URLCharacters}{URLEndCharacter})?)
 	{Separator2}					{ addToken(Token.IDENTIFIER); }
 
 	/* Operators. */
-	"!" |
-"%" |
-"&" |
-"&&" |
-"*" |
-"+" |
-"," |
-"-" |
-"/" |
-":" |
-"<" |
-"<=" |
-"=" |
-"==" |
-">" |
-">=" |
-"|" |
-"||"		{ addToken(Token.OPERATOR); }
 
 	/* Numbers */
 	{IntegerLiteral}				{ addToken(Token.LITERAL_NUMBER_DECIMAL_INT); }

@@ -105,8 +105,8 @@ public class AStarSquareEuclideanWalker extends AbstractAStarWalker {
         break;
     }
 
-    // break ties to prefer better looking paths that are along the straight line from the starting
-    // point to the goal
+    // break ties to prefer better looking paths that are along the straight line from the
+    // starting point to the goal
     if ((goal.x > current.x && goal.y > current.y) || (goal.x < current.x && goal.y < current.y)) {
       crossProductTieBreaker = Math.abs(xDist * crossY - crossX * yDist);
     } else {

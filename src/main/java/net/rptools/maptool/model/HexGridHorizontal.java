@@ -35,6 +35,16 @@ import net.rptools.maptool.client.walker.astar.AStarHorizHexEuclideanWalker;
 import net.rptools.maptool.model.TokenFootprint.OffsetTranslator;
 import net.rptools.maptool_fx.MapTool;
 
+/*
+ * @formatter:off
+ * Horizontal Hex grids produce rows of hexes
+ * and have their points at the top
+ *  /\ /\ /\ /\ /\ /\
+ * |  |  |  |  |  |  |
+ *  \/ \/ \/ \/ \/ \/
+ *
+ * @formatter:on
+ */
 public class HexGridHorizontal extends HexGrid {
 
   /*
@@ -99,11 +109,11 @@ public class HexGridHorizontal extends HexGrid {
    * For a horizontal hex grid we want the following layout:
    * @formatter:off
    *
-   *        7    -    9
-   *    4        5        6
-   *        1    -    3
+   *		7	-	9
+   *	4		5		6
+   *		1	-	3
    *
-   * @formatter:on
+   * @formatter:off
    * (non-Javadoc)
    * @see net.rptools.maptool.model.Grid#installMovementKeys(net.rptools.maptool.client.tool.PointerTool, java.util.Map)
    */
@@ -113,30 +123,30 @@ public class HexGridHorizontal extends HexGrid {
       movementKeys = new HashMap<KeyStroke, Action>(12); // parameter is 9/0.75 (load factor)
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD7, 0), new MovementKey(callback, -1, -1));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD8, 0), new MovementKey(callback,
-      // 0, -1));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD8, 0), new
+      // MovementKey(callback, 0, -1));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD9, 0), new MovementKey(callback, 1, -1));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD4, 0), new MovementKey(callback, -1, 0));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD5, 0), new MovementKey(callback,
-      // 0, 0));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD5, 0), new
+      // MovementKey(callback, 0, 0));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD6, 0), new MovementKey(callback, 1, 0));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD1, 0), new MovementKey(callback, -1, 1));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD2, 0), new MovementKey(callback,
-      // 0, 1));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD2, 0), new
+      // MovementKey(callback, 0, 1));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_NUMPAD3, 0), new MovementKey(callback, 1, 1));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), new MovementKey(callback, -1, 0));
       movementKeys.put(
           KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), new MovementKey(callback, 1, 0));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), new MovementKey(callback, 0,
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), new MovementKey(callback, 0,
       // -1));
-      // movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), new MovementKey(callback, 0,
-      // 1));
+      //			movementKeys.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), new MovementKey(callback,
+      // 0, 1));
     }
     actionMap.putAll(movementKeys);
   }
@@ -254,5 +264,22 @@ public class HexGridHorizontal extends HexGrid {
   @Override
   protected OffsetTranslator getOffsetTranslator() {
     return OFFSET_TRANSLATOR;
+  }
+
+  /** Returns the cell centre as well as nearest vertex */
+  @Override
+  public ZonePoint getNearestVertex(ZonePoint point) {
+    double heightHalf = getURadius() / 2;
+    //
+    double isoX =
+        ((point.x - getOffsetX()) / getVRadius() + (point.y - getOffsetY()) / heightHalf) / 2;
+    double isoY =
+        ((point.y - getOffsetY()) / heightHalf - (point.x - getOffsetX()) / getVRadius()) / 2;
+    int newX = (int) Math.floor(isoX);
+    int newY = (int) Math.floor(isoY);
+    //
+    double mapX = (newX - newY) * getVRadius();
+    double mapY = ((newX + newY) * heightHalf) + heightHalf;
+    return new ZonePoint((int) (mapX) + getOffsetX(), (int) (mapY) + getOffsetY());
   }
 }

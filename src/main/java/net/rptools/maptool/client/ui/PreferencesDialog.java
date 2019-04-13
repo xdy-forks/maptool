@@ -61,7 +61,7 @@ public class PreferencesDialog extends JDialog {
   private static final Logger log = LogManager.getLogger(PreferencesDialog.class);
 
   /** @author frank */
-  private abstract class DocumentListenerProxy implements DocumentListener {
+  private abstract class DocumentListenerProxy<T> implements DocumentListener {
     JTextField comp;
 
     public DocumentListenerProxy(JTextField tf) {
@@ -82,14 +82,15 @@ public class PreferencesDialog extends JDialog {
 
     protected void updateValue() {
       try {
-        int value = StringUtil.parseInteger(comp.getText()); // Localized
-        storeNumericValue(value);
+        storeNumericValue(convertString(comp.getText())); // Localized
       } catch (ParseException nfe) {
         // Ignore it
       }
     }
 
-    protected abstract void storeNumericValue(int value);
+    protected abstract T convertString(String value) throws ParseException;
+
+    protected abstract void storeNumericValue(T value);
   }
 
   /** @author frank */
@@ -177,7 +178,7 @@ public class PreferencesDialog extends JDialog {
   // Application
   private final JCheckBox fitGMView;
   private final JCheckBox fillSelectionCheckBox;
-  private final JCheckBox initEnableServerSyncCheckBox;
+  // private final JCheckBox initEnableServerSyncCheckBox;
   private final JCheckBox hideNPCs;
   private final JCheckBox ownerPermissions;
   private final JCheckBox lockMovement;
@@ -185,6 +186,7 @@ public class PreferencesDialog extends JDialog {
   private final JTextField upnpDiscoveryTimeoutTextField;
   private final JTextField fileSyncPath;
   private final JButton fileSyncPathButton;
+  private final JCheckBox allowExternalMacroAccessCheckBox;
 
   // Startup
   private final JTextField jvmXmxTextField;
@@ -199,6 +201,8 @@ public class PreferencesDialog extends JDialog {
 
   private final JComboBox<String> jvmLanguageOverideComboBox;
 
+  private boolean jvmValuesChanged = false;
+
   public PreferencesDialog() {
     super(MapTool.getFrame(), "Preferences", true);
     setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -211,6 +215,11 @@ public class PreferencesDialog extends JDialog {
     okButton.addActionListener(
         new ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent e) {
+            // Warn the user that they changed JVM options and need to restart MapTool for them to
+            // take affect.
+            // Also warn user to double check settings...
+            if (jvmValuesChanged) if (!MapTool.confirm("msg.confirm.jvm.options")) return;
+
             setVisible(false);
             dispose();
             MapTool.getEventDispatcher().fireEvent(MapTool.PreferencesEvent.Changed);
@@ -226,7 +235,7 @@ public class PreferencesDialog extends JDialog {
     showNumberingCombo = panel.getComboBox("showNumberingCombo");
     saveReminderCheckBox = panel.getCheckBox("saveReminderCheckBox");
     fillSelectionCheckBox = panel.getCheckBox("fillSelectionCheckBox");
-    initEnableServerSyncCheckBox = panel.getCheckBox("initEnableServerSyncCheckBox");
+    // initEnableServerSyncCheckBox = panel.getCheckBox("initEnableServerSyncCheckBox");
     autoSaveSpinner = panel.getSpinner("autoSaveSpinner");
     duplicateTokenCombo = panel.getComboBox("duplicateTokenCombo");
     tokenNamingCombo = panel.getComboBox("tokenNamingCombo");
@@ -287,6 +296,7 @@ public class PreferencesDialog extends JDialog {
     showInitGainMessage = panel.getCheckBox("showInitGainMessage");
     upnpDiscoveryTimeoutTextField = panel.getTextField("upnpDiscoveryTimeoutTextField");
     typingNotificationDuration = panel.getSpinner("typingNotificationDuration");
+    allowExternalMacroAccessCheckBox = panel.getCheckBox("allowExternalMacroAccessCheckBox");
     fileSyncPath = panel.getTextField("fileSyncPath");
     fileSyncPathButton = (JButton) panel.getButton("fileSyncPathButton");
 
@@ -344,21 +354,31 @@ public class PreferencesDialog extends JDialog {
     toolTipInitialDelay
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(toolTipInitialDelay) {
+            new DocumentListenerProxy<Integer>(toolTipInitialDelay) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setToolTipInitialDelay(value);
                 ToolTipManager.sharedInstance().setInitialDelay(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
     toolTipDismissDelay
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(toolTipDismissDelay) {
+            new DocumentListenerProxy<Integer>(toolTipDismissDelay) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setToolTipDismissDelay(value);
                 ToolTipManager.sharedInstance().setDismissDelay(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
 
@@ -446,10 +466,16 @@ public class PreferencesDialog extends JDialog {
             AppPreferences.setFillSelectionBox(fillSelectionCheckBox.isSelected());
           }
         });
-    initEnableServerSyncCheckBox.addActionListener(
+    // initEnableServerSyncCheckBox.addActionListener(new ActionListener() {
+    // public void actionPerformed(ActionEvent e) {
+    // AppPreferences.setInitEnableServerSync(initEnableServerSyncCheckBox.isSelected());
+    // }
+    // });
+    allowExternalMacroAccessCheckBox.addActionListener(
         new ActionListener() {
           public void actionPerformed(ActionEvent e) {
-            AppPreferences.setInitEnableServerSync(initEnableServerSyncCheckBox.isSelected());
+            AppPreferences.setAllowExternalMacroAccess(
+                allowExternalMacroAccessCheckBox.isSelected());
           }
         });
     showDialogOnNewToken.addActionListener(
@@ -556,38 +582,58 @@ public class PreferencesDialog extends JDialog {
     defaultGridSizeTextField
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(defaultGridSizeTextField) {
+            new DocumentListenerProxy<Integer>(defaultGridSizeTextField) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setDefaultGridSize(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
 
     defaultUnitsPerCellTextField
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(defaultUnitsPerCellTextField) {
+            new DocumentListenerProxy<Double>(defaultUnitsPerCellTextField) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Double value) {
                 AppPreferences.setDefaultUnitsPerCell(value);
+              }
+
+              @Override
+              protected Double convertString(String value) throws ParseException {
+                return StringUtil.parseDecimal(value);
               }
             });
     defaultVisionDistanceTextField
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(defaultVisionDistanceTextField) {
+            new DocumentListenerProxy<Integer>(defaultVisionDistanceTextField) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setDefaultVisionDistance(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
     statsheetPortraitSize
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(statsheetPortraitSize) {
+            new DocumentListenerProxy<Integer>(statsheetPortraitSize) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setPortraitSize(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
     haloLineWidthSpinner.addChangeListener(
@@ -677,10 +723,15 @@ public class PreferencesDialog extends JDialog {
     fontSizeTextField
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(fontSizeTextField) {
+            new DocumentListenerProxy<Integer>(fontSizeTextField) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setFontSize(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
 
@@ -717,10 +768,15 @@ public class PreferencesDialog extends JDialog {
     upnpDiscoveryTimeoutTextField
         .getDocument()
         .addDocumentListener(
-            new DocumentListenerProxy(upnpDiscoveryTimeoutTextField) {
+            new DocumentListenerProxy<Integer>(upnpDiscoveryTimeoutTextField) {
               @Override
-              protected void storeNumericValue(int value) {
+              protected void storeNumericValue(Integer value) {
                 AppPreferences.setUpnpDiscoveryTimeout(value);
+              }
+
+              @Override
+              protected Integer convertString(String value) throws ParseException {
+                return StringUtil.parseInteger(value);
               }
             });
     fileSyncPathButton.addActionListener(
@@ -756,6 +812,7 @@ public class PreferencesDialog extends JDialog {
                 UserJvmPrefs.setJvmOption(JVM_OPTION.MAX_MEM, JVM_OPTION.MAX_MEM.getDefaultValue());
                 log.warn("Invalid JVM Xmx paramater entered: " + jvmXmx);
               }
+              jvmValuesChanged = true;
             }
           }
         });
@@ -773,6 +830,7 @@ public class PreferencesDialog extends JDialog {
                 UserJvmPrefs.setJvmOption(JVM_OPTION.MIN_MEM, JVM_OPTION.MIN_MEM.getDefaultValue());
                 log.warn("Invalid JVM Xms paramater entered: " + jvmXms);
               }
+              jvmValuesChanged = true;
             }
           }
         });
@@ -791,6 +849,7 @@ public class PreferencesDialog extends JDialog {
                     JVM_OPTION.STACK_SIZE, JVM_OPTION.STACK_SIZE.getDefaultValue());
                 log.warn("Invalid JVM Xss paramater entered: " + jvmXss);
               }
+              jvmValuesChanged = true;
             }
           }
         });
@@ -800,6 +859,7 @@ public class PreferencesDialog extends JDialog {
           public void focusLost(FocusEvent e) {
             if (!e.isTemporary()) {
               UserJvmPrefs.setJvmOption(JVM_OPTION.DATA_DIR, dataDirTextField.getText().trim());
+              jvmValuesChanged = true;
             }
           }
         });
@@ -809,12 +869,14 @@ public class PreferencesDialog extends JDialog {
 
           public void actionPerformed(ActionEvent e) {
             UserJvmPrefs.setJvmOption(JVM_OPTION.ASSERTIONS, jvmAssertionsCheckbox.isSelected());
+            jvmValuesChanged = true;
           }
         });
     jvmDirect3dCheckbox.addActionListener(
         new ActionListener() {
           public void actionPerformed(ActionEvent e) {
             UserJvmPrefs.setJvmOption(JVM_OPTION.JAVA2D_D3D, jvmDirect3dCheckbox.isSelected());
+            jvmValuesChanged = true;
           }
         });
     jvmOpenGLCheckbox.addActionListener(
@@ -822,6 +884,7 @@ public class PreferencesDialog extends JDialog {
           public void actionPerformed(ActionEvent e) {
             UserJvmPrefs.setJvmOption(
                 JVM_OPTION.JAVA2D_OPENGL_OPTION, jvmOpenGLCheckbox.isSelected());
+            jvmValuesChanged = true;
           }
         });
     jvmInitAwtCheckbox.addActionListener(
@@ -829,6 +892,7 @@ public class PreferencesDialog extends JDialog {
           public void actionPerformed(ActionEvent e) {
             UserJvmPrefs.setJvmOption(
                 JVM_OPTION.MACOSX_EMBEDDED_OPTION, jvmInitAwtCheckbox.isSelected());
+            jvmValuesChanged = true;
           }
         });
 
@@ -838,6 +902,7 @@ public class PreferencesDialog extends JDialog {
             UserJvmPrefs.setJvmOption(
                 JVM_OPTION.LOCALE_LANGUAGE,
                 jvmLanguageOverideComboBox.getSelectedItem().toString());
+            jvmValuesChanged = true;
           }
         });
 
@@ -950,7 +1015,7 @@ public class PreferencesDialog extends JDialog {
     showDialogOnNewToken.setSelected(AppPreferences.getShowDialogOnNewToken());
     saveReminderCheckBox.setSelected(AppPreferences.getSaveReminder());
     fillSelectionCheckBox.setSelected(AppPreferences.getFillSelectionBox());
-    initEnableServerSyncCheckBox.setSelected(AppPreferences.getInitEnableServerSync());
+    // initEnableServerSyncCheckBox.setSelected(AppPreferences.getInitEnableServerSync());
     autoSaveSpinner.setValue(AppPreferences.getAutoSaveIncrement());
     newMapsHaveFOWCheckBox.setSelected(AppPreferences.getNewMapsHaveFOW());
     tokensPopupWarningWhenDeletedCheckBox.setSelected(AppPreferences.getTokensWarnWhenDeleted());
@@ -967,7 +1032,7 @@ public class PreferencesDialog extends JDialog {
     forceFacingArrowCheckBox.setSelected(AppPreferences.getForceFacingArrow());
     backgroundsStartSnapToGridCheckBox.setSelected(AppPreferences.getBackgroundsStartSnapToGrid());
     defaultGridSizeTextField.setText(Integer.toString(AppPreferences.getDefaultGridSize()));
-    defaultUnitsPerCellTextField.setText(Integer.toString(AppPreferences.getDefaultUnitsPerCell()));
+    defaultUnitsPerCellTextField.setText(Double.toString(AppPreferences.getDefaultUnitsPerCell()));
     defaultVisionDistanceTextField.setText(
         Integer.toString(AppPreferences.getDefaultVisionDistance()));
     statsheetPortraitSize.setText(Integer.toString(AppPreferences.getPortraitSize()));
@@ -1013,6 +1078,7 @@ public class PreferencesDialog extends JDialog {
     showInitGainMessage.setSelected(AppPreferences.isShowInitGainMessage());
     upnpDiscoveryTimeoutTextField.setText(
         Integer.toString(AppPreferences.getUpnpDiscoveryTimeout()));
+    allowExternalMacroAccessCheckBox.setSelected(AppPreferences.getAllowExternalMacroAccess());
     fileSyncPath.setText(AppPreferences.getFileSyncPath());
 
     // get JVM User Defaults/User override preferences

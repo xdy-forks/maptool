@@ -85,11 +85,16 @@ public class MapToolVariableResolver extends MapVariableResolver {
 
   private Token tokenInContext;
 
+  private boolean autoPrompt;
+
   public MapToolVariableResolver(Token tokenInContext) {
     this.tokenInContext = tokenInContext;
+    autoPrompt = true;
     // Set the default macro.args to "" so that it is always present.
     try {
       this.setVariable("macro.args", "");
+      this.setVariable("macro.catchAbort", BigDecimal.ZERO);
+      this.setVariable("macro.catchAssert", BigDecimal.ZERO);
       this.setVariable("macro.args.num", BigDecimal.ZERO);
       this.setVariable("tokens.denyMove", 0);
       this.setVariable("tokens.moveCount", 1);
@@ -125,6 +130,14 @@ public class MapToolVariableResolver extends MapVariableResolver {
     }
   }
 
+  public void setAutoPrompt(boolean value) {
+    autoPrompt = value;
+  }
+
+  public boolean getAutoPrompt() {
+    return autoPrompt;
+  }
+
   @Override
   public boolean containsVariable(String name, VariableModifiers mods) {
 
@@ -156,7 +169,8 @@ public class MapToolVariableResolver extends MapVariableResolver {
         String barName = name.substring(BAR_PREFIX.length());
         return TokenBarFunction.getInstance().getValue(getTokenInContext(), barName);
       } else if (name.equals(TOKEN_HALO)) {
-        // We don't want this evaluated as the # format is more useful to us then the evaluated
+        // We don't want this evaluated as the # format is more useful to us then the
+        // evaluated
         // format.
         return TokenHaloFunction.getInstance().getHalo(tokenInContext).toString();
       } else if (name.equals(TOKEN_NAME)) {
@@ -212,7 +226,7 @@ public class MapToolVariableResolver extends MapVariableResolver {
     }
 
     // Prompt
-    if (result == null || mods == VariableModifiers.Prompt) {
+    if ((result == null && autoPrompt == true) || mods == VariableModifiers.Prompt) {
       String DialogTitle = I18N.getText("lineParser.dialogTitleNoToken");
       if (tokenInContext != null
           && tokenInContext.getGMName() != null

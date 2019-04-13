@@ -27,6 +27,8 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
@@ -55,6 +57,7 @@ import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -85,6 +88,8 @@ import net.rptools.maptool.client.AppPreferences;
 import net.rptools.maptool.client.AppState;
 import net.rptools.maptool.client.AppStyle;
 import net.rptools.maptool.client.AppUtil;
+import net.rptools.maptool.client.MapTool;
+import net.rptools.maptool.client.ServerDisconnectHandler;
 import net.rptools.maptool.client.swing.AppHomeDiskSpaceStatusBar;
 import net.rptools.maptool.client.swing.AssetCacheStatusBar;
 import net.rptools.maptool.client.swing.CoordinateStatusBar;
@@ -131,7 +136,6 @@ import net.rptools.maptool.model.drawing.DrawableTexturePaint;
 import net.rptools.maptool.model.drawing.DrawnElement;
 import net.rptools.maptool.model.drawing.Pen;
 import net.rptools.maptool.util.ImageManager;
-import net.rptools.maptool_fx.MapTool;
 import net.rptools.maptool_fx.stub.DockingManagerStub;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.logging.log4j.LogManager;
@@ -242,6 +246,136 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
 
   public JComponent getTokenTreePanel() {
     return tokenTreePanel;
+  }
+
+  private final class KeyListenerDeleteDraw implements KeyListener {
+    private final JTree tree;
+
+    private KeyListenerDeleteDraw(JTree tree) {
+      this.tree = tree;
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+      if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+        EventQueue.invokeLater(
+            new Runnable() {
+              public void run() {
+                // check to see if this is the required action
+                if (!MapTool.confirmDrawDelete()) {
+                  return;
+                }
+                DrawnElement firstElement = null;
+                Set<GUID> selectedDrawSet = new HashSet<GUID>();
+                boolean topLevelOnly = true;
+                for (TreePath path : tree.getSelectionPaths()) {
+                  if (path.getPathCount() != 3) topLevelOnly = false;
+                  if (path.getLastPathComponent() instanceof DrawnElement) {
+                    DrawnElement de = (DrawnElement) path.getLastPathComponent();
+                    if (firstElement == null) {
+                      firstElement = de;
+                    }
+                    selectedDrawSet.add(de.getDrawable().getId());
+                  }
+                }
+
+                for (GUID id : selectedDrawSet) {
+                  MapTool.serverCommand().undoDraw(getCurrentZoneRenderer().getZone().getId(), id);
+                }
+                getCurrentZoneRenderer().repaint();
+                MapTool.getFrame().updateDrawTree();
+                MapTool.getFrame().refresh();
+              }
+            });
+      }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {}
+  }
+
+  private final class KeyListenerDeleteToken implements KeyListener {
+    private final JTree tree;
+
+    private KeyListenerDeleteToken(JTree tree) {
+      this.tree = tree;
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+      if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+        EventQueue.invokeLater(
+            new Runnable() {
+              public void run() {
+                // check to see if this is the required action
+                if (!MapTool.confirmTokenDelete()) {
+                  return;
+                }
+                Token firstToken = null;
+                Set<GUID> selectedTokenSet = new HashSet<GUID>();
+                for (TreePath path : tree.getSelectionPaths()) {
+                  if (path.getLastPathComponent() instanceof Token) {
+                    Token token = (Token) path.getLastPathComponent();
+                    if (firstToken == null) {
+                      firstToken = token;
+                    }
+                    if (AppUtil.playerOwns(token)) {
+                      selectedTokenSet.add(token.getId());
+                    }
+                  }
+                }
+
+                boolean unhideImpersonated = false;
+                boolean unhideSelected = false;
+                if (getCurrentZoneRenderer().getSelectedTokenSet().size() > 10) {
+                  if (MapTool.getFrame().getFrame(MapToolFrame.MTFrame.IMPERSONATED).isHidden()
+                      == false) {
+                    unhideImpersonated = true;
+                    MapTool.getFrame()
+                        .getDockingManager()
+                        .hideFrame(MapToolFrame.MTFrame.IMPERSONATED.name());
+                  }
+                  if (MapTool.getFrame().getFrame(MapToolFrame.MTFrame.SELECTION).isHidden()
+                      == false) {
+                    unhideSelected = true;
+                    MapTool.getFrame()
+                        .getDockingManager()
+                        .hideFrame(MapToolFrame.MTFrame.SELECTION.name());
+                  }
+                }
+                for (GUID tokenGUID : selectedTokenSet) {
+                  Token token = getCurrentZoneRenderer().getZone().getToken(tokenGUID);
+
+                  if (AppUtil.playerOwns(token)) {
+                    getCurrentZoneRenderer().getZone().removeToken(tokenGUID);
+                    MapTool.serverCommand()
+                        .removeToken(getCurrentZoneRenderer().getZone().getId(), tokenGUID);
+                  }
+                }
+                if (unhideImpersonated) {
+                  MapTool.getFrame()
+                      .getDockingManager()
+                      .showFrame(MapToolFrame.MTFrame.IMPERSONATED.name());
+                }
+
+                if (unhideSelected) {
+                  MapTool.getFrame()
+                      .getDockingManager()
+                      .showFrame(MapToolFrame.MTFrame.SELECTION.name());
+                }
+              }
+            });
+      }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {}
   }
 
   private class ChatTyperObserver implements Observer {
@@ -942,6 +1076,9 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
             }
           }
         });
+
+    tree.addKeyListener(new KeyListenerDeleteDraw(tree));
+
     // Add mouse Event for right click menu
     tree.addMouseListener(
         new MouseAdapter() {
@@ -987,7 +1124,9 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
                     public void run() {
                       DrawnElement firstElement = null;
                       Set<GUID> selectedDrawSet = new HashSet<GUID>();
+                      boolean topLevelOnly = true;
                       for (TreePath path : tree.getSelectionPaths()) {
+                        if (path.getPathCount() != 3) topLevelOnly = false;
                         if (path.getLastPathComponent() instanceof DrawnElement) {
                           DrawnElement de = (DrawnElement) path.getLastPathComponent();
                           if (firstElement == null) {
@@ -999,7 +1138,12 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
                       if (!selectedDrawSet.isEmpty()) {
                         try {
                           new DrawPanelPopupMenu(
-                                  selectedDrawSet, x, y, getCurrentZoneRenderer(), firstElement)
+                                  selectedDrawSet,
+                                  x,
+                                  y,
+                                  getCurrentZoneRenderer(),
+                                  firstElement,
+                                  topLevelOnly)
                               .showPopup(tree);
                         } catch (IllegalComponentStateException icse) {
                           log.info(tree.toString(), icse);
@@ -1037,6 +1181,9 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
     tree.setModel(tokenPanelTreeModel);
     tree.setCellRenderer(new TokenPanelTreeCellRenderer());
     tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+
+    tree.addKeyListener(new KeyListenerDeleteToken(tree));
+
     tree.addMouseListener(
         new MouseAdapter() {
           // TODO: Make this a handler class, not an aic
@@ -1521,6 +1668,96 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
     }
   }
 
+  // WINDOW LISTENER
+  public void windowOpened(WindowEvent e) {}
+
+  public void windowClosing(WindowEvent e) {
+    if (!confirmClose()) {
+      return;
+    }
+    closingMaintenance();
+  }
+
+  public boolean confirmClose() {
+    if (MapTool.isHostingServer()) {
+      if (!MapTool.confirm("msg.confirm.hostingDisconnect")) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public void closingMaintenance() {
+    if (AppPreferences.getSaveReminder()) {
+      if (MapTool.getPlayer().isGM()) {
+        int result =
+            MapTool.confirmImpl(
+                I18N.getText("msg.title.saveCampaign"),
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                "msg.confirm.saveCampaign",
+                (Object[]) null);
+        // int result = JOptionPane.showConfirmDialog(MapTool.getFrame(),
+        // I18N.getText("msg.confirm.saveCampaign"), I18N.getText("msg.title.saveCampaign"),
+        // JOptionPane.YES_NO_CANCEL_OPTION);
+
+        if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
+          return;
+        }
+        if (result == JOptionPane.YES_OPTION) {
+          final Observer callback =
+              new Observer() {
+                public void update(java.util.Observable o, Object arg) {
+                  if (arg instanceof String) {
+                    // There was an error during the save -- don't terminate MapTool!
+                  } else {
+                    MapTool.getFrame().close();
+                  }
+                }
+              };
+          ActionEvent ae = new ActionEvent(callback, 0, "close");
+          AppActions.SAVE_CAMPAIGN.actionPerformed(ae);
+          return;
+        }
+      } else {
+        if (!MapTool.confirm("msg.confirm.disconnecting")) {
+          return;
+        }
+      }
+    }
+    close();
+  }
+
+  public void close() {
+    ServerDisconnectHandler.disconnectExpected = true;
+    MapTool.disconnect();
+
+    getDockingManager()
+        .saveLayoutDataToFile(AppUtil.getAppHome("config").getAbsolutePath() + "/layout.dat");
+
+    // If closing cleanly, remove the autosave file
+    MapTool.getAutoSaveManager().purge();
+    setVisible(false);
+
+    EventQueue.invokeLater(
+        new Runnable() {
+          public void run() {
+            dispose();
+          }
+        });
+  }
+
+  public void windowClosed(WindowEvent e) {
+    System.exit(0);
+  }
+
+  public void windowIconified(WindowEvent e) {}
+
+  public void windowDeiconified(WindowEvent e) {}
+
+  public void windowActivated(WindowEvent e) {}
+
+  public void windowDeactivated(WindowEvent e) {}
+
   // Windows OS defaults F10 to the menu bar, noooooo!! We want for macro buttons.
   // XXX Shouldn't this keystroke be configurable via the properties file anyway?
   // XXX Doesn't work for Mac OSX and isn't called in that case.
@@ -1754,45 +1991,4 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
     }
   }
 
-  @Override
-  public void windowOpened(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowClosing(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowClosed(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowIconified(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowDeiconified(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowActivated(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void windowDeactivated(WindowEvent e) {
-    // TODO Auto-generated method stub
-
-  }
 }

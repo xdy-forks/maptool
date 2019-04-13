@@ -214,8 +214,8 @@ public class ASyncPartitionedDrawableRenderer implements DrawableRenderer {
 
       Pen pen = element.getPen();
       if (pen.getOpacity() != 1 && pen.getOpacity() != 0 /*
-                                                                * handle legacy pens, besides, it doesn't make sense to have a non visible pen
-                                                                */) {
+																 * handle legacy pens, besides, it doesn't make sense to have a non visible pen
+																 */) {
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pen.getOpacity()));
       }
       // if (gridx == 0 && gridy == 1) {

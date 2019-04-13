@@ -243,6 +243,7 @@ public class ToolbarPanel extends JToolBar {
   private OptionPanel createTemplatePanel() {
     OptionPanel panel = new OptionPanel();
     panel.add(RadiusTemplateTool.class);
+    panel.add(RadiusCellTemplateTool.class);
     panel.add(ConeTemplateTool.class);
     panel.add(LineTemplateTool.class);
     panel.add(BurstTemplateTool.class);

@@ -356,6 +356,9 @@ public class AppPreferences {
   private static final String KEY_PORTRAIT_SIZE = "portraitSize";
   private static final int DEFAULT_PORTRAIT_SIZE = 175;
 
+  private static final String KEY_THUMBNAIL_SIZE = "thumbnailSize";
+  private static final int DEFAULT_THUMBNAIL_SIZE = 500;
+
   private static final String KEY_ALLOW_PLAYER_MACRO_EDITS_DEFAULT = "allowPlayerMacroEditsDefault";
   private static final boolean DEFAULT_ALLOW_PLAYER_MACRO_EDITS_DEFAULT = true;
 
@@ -523,6 +526,14 @@ public class AppPreferences {
     return prefs.getInt(KEY_PORTRAIT_SIZE, DEFAULT_PORTRAIT_SIZE);
   }
 
+  public static void setThumbnailSize(int size) {
+    prefs.putInt(KEY_THUMBNAIL_SIZE, size);
+  }
+
+  public static int getThumbnailSize() {
+    return prefs.getInt(KEY_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE);
+  }
+
   public static void setShowSmilies(boolean show) {
     prefs.putBoolean(KEY_INSERT_SMILIES, show);
   }
@@ -623,12 +634,12 @@ public class AppPreferences {
     return prefs.getInt(KEY_DEFAULT_GRID_SIZE, DEFAULT_DEFAULT_GRID_SIZE);
   }
 
-  public static void setDefaultUnitsPerCell(int size) {
-    prefs.putInt(KEY_DEFAULT_UNITS_PER_CELL, size);
+  public static void setDefaultUnitsPerCell(double size) {
+    prefs.putDouble(KEY_DEFAULT_UNITS_PER_CELL, size);
   }
 
-  public static int getDefaultUnitsPerCell() {
-    return prefs.getInt(KEY_DEFAULT_UNITS_PER_CELL, DEFAULT_DEFAULT_UNITS_PER_CELL);
+  public static double getDefaultUnitsPerCell() {
+    return prefs.getDouble(KEY_DEFAULT_UNITS_PER_CELL, DEFAULT_DEFAULT_UNITS_PER_CELL);
   }
 
   public static void setDefaultVisionDistance(int dist) {
@@ -834,6 +845,15 @@ public class AppPreferences {
 
   public static void setSkipAutoUpdateCommit(String commit) {
     prefs.put(SKIP_AUTO_UPDATE_COMMIT, commit);
+    return prefs.getBoolean(KEY_SKIP_AUTO_UPDATE, DEFAULT_SKIP_AUTO_UPDATE);
+  }
+
+  public static boolean getAllowExternalMacroAccess() {
+    return prefs.getBoolean(KEY_ALLOW_EXTERNAL_MACRO_ACCESS, DEFAULT_ALLOW_EXTERNAL_MACRO_ACCESS);
+  }
+
+  public static void setAllowExternalMacroAccess(boolean value) {
+    prefs.putBoolean(KEY_ALLOW_EXTERNAL_MACRO_ACCESS, value);
   }
 
   public static WalkerMetric getMovementMetric() {

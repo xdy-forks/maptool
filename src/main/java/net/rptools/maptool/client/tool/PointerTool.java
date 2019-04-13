@@ -14,9 +14,6 @@
  */
 package net.rptools.maptool.client.tool;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.google.common.annotations.VisibleForTesting;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -38,14 +35,22 @@ import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextAttribute;
+import java.awt.font.TextLayout;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.IOException;
+import java.text.AttributedCharacterIterator;
+import java.text.AttributedString;
+import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,6 +69,8 @@ import net.rptools.maptool.client.AppConstants;
 import net.rptools.maptool.client.AppPreferences;
 import net.rptools.maptool.client.AppStyle;
 import net.rptools.maptool.client.AppUtil;
+import net.rptools.maptool.client.MapTool;
+import net.rptools.maptool.client.MapToolVariableResolver;
 import net.rptools.maptool.client.ScreenPoint;
 import net.rptools.maptool.client.swing.HTMLPanelRenderer;
 import net.rptools.maptool.client.tool.LayerSelectionDialog.LayerSelectionListener;
@@ -86,6 +93,7 @@ import net.rptools.maptool.model.Player;
 import net.rptools.maptool.model.Player.Role;
 import net.rptools.maptool.model.Pointer;
 import net.rptools.maptool.model.Token;
+import net.rptools.maptool.model.TokenFootprint;
 import net.rptools.maptool.model.TokenProperty;
 import net.rptools.maptool.model.Zone;
 import net.rptools.maptool.model.Zone.Layer;
@@ -140,7 +148,11 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
   private Token tokenOnStatSheet;
 
   private static int PADDING = 7;
+  private static int STATSHEET_EXTERIOR_PADDING = 5;
 
+  // Offset from token's X,Y when dragging. Values are in zone coordinates.
+  private int dragOffsetX;
+  private int dragOffsetY;
   private int dragStartX;
   private int dragStartY;
 
@@ -281,6 +293,9 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
     renderer.commitMoveSelectionSet(tokenBeingDragged.getId()); // TODO: figure out a better way
     isDraggingToken = false;
     isMovingWithKeys = false;
+
+    dragOffsetX = 0;
+    dragOffsetY = 0;
 
     exposeFoW(null);
   }
@@ -537,6 +552,17 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
         } else {
           renderer.selectToken(token.getId());
         }
+        // Dragging offset for currently selected token
+        ZonePoint pos = new ScreenPoint(e.getX(), e.getY()).convertToZone(renderer);
+        Rectangle tokenBounds = token.getBounds(renderer.getZone());
+
+        if (token.isSnapToGrid()) {
+          dragOffsetX = (pos.x - tokenBounds.x) - (tokenBounds.width / 2);
+          dragOffsetY = (pos.y - tokenBounds.y) - (tokenBounds.height / 2);
+        } else {
+          dragOffsetX = pos.x - tokenBounds.x;
+          dragOffsetY = pos.y - tokenBounds.y;
+        }
       }
     } else {
       if (SwingUtilities.isLeftMouseButton(e)) {
@@ -705,6 +731,24 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
       return;
     }
 
+    if (isDraggingToken) {
+      // FJE If we're dragging the token, wouldn't mouseDragged() be called instead? Can this
+      // code
+      // ever be executed?
+      if (isMovingWithKeys) {
+        return;
+      }
+      ZonePoint zp = new ScreenPoint(mouseX, mouseY).convertToZone(renderer);
+      ZonePoint last;
+      if (tokenUnderMouse == null) last = zp;
+      else {
+        last = renderer.getLastWaypoint(tokenUnderMouse.getId());
+        // XXX This shouldn't be possible, but it happens?!
+        if (last == null) last = zp;
+      }
+      handleDragToken(zp, zp.x - last.x, zp.y - last.y);
+      return;
+    }
     tokenUnderMouse = renderer.getTokenAt(mouseX, mouseY);
     keysDown = e.getModifiersEx();
     renderer.setMouseOver(tokenUnderMouse);
@@ -775,12 +819,23 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
         if (isMovingWithKeys) {
           return;
         }
+        Grid grid = getZone().getGrid();
+        TokenFootprint tf = tokenUnderMouse.getFootprint(grid);
+        Rectangle r = tf.getBounds(grid);
         ZonePoint last = renderer.getLastWaypoint(tokenUnderMouse.getId());
-        if (last == null) {
-          last = new ZonePoint(tokenUnderMouse.getX(), tokenUnderMouse.getY());
-        }
+        if (last == null)
+          last =
+              new ZonePoint(
+                  tokenUnderMouse.getX() + r.width / 2, tokenUnderMouse.getY() + r.height / 2);
         ZonePoint zp = new ScreenPoint(mouseX, mouseY).convertToZone(renderer);
-        handleDragToken(zp);
+        if (tokenUnderMouse.isSnapToGrid() && grid.getCapabilities().isSnapToGridSupported()) {
+          zp.translate(-r.width / 2, -r.height / 2);
+          last.translate(-r.width / 2, -r.height / 2);
+        }
+        zp.translate(-dragOffsetX, -dragOffsetY);
+        int dx = zp.x - last.x;
+        int dy = zp.y - last.y;
+        handleDragToken(zp, dx, dy);
         return;
       }
       if (!isDraggingToken && renderer.isTokenMoving(tokenUnderMouse)) {
@@ -812,7 +867,6 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
         }
         startTokenDrag(tokenUnderMouse);
         isDraggingToken = true;
-        SwingUtil.hidePointer(renderer);
       }
       return;
     }
@@ -827,21 +881,12 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
    * Move the keytoken being dragged to this zone point
    *
    * @param zonePoint The new ZonePoint for the token.
+   * @param dx The amount being moved in the X direction
+   * @param dy The amount being moved in the Y direction
    * @return true if the move was successful
    */
-  @VisibleForTesting
-  boolean handleDragToken(ZonePoint zonePoint) {
-    checkNotNull(zonePoint);
-    log.debug(
-        "Trying to drag token from: " + tokenBeingDragged.getZonePoint() + " to: " + zonePoint);
+  public boolean handleDragToken(ZonePoint zonePoint, int dx, int dy) {
     Grid grid = renderer.getZone().getGrid();
-    if (tokenBeingDragged.isSnapToGrid() && grid.getCapabilities().isSnapToGridSupported()) {
-      zonePoint.translate(grid.getCellOffset().width / 2, grid.getCellOffset().height / 2);
-      // Convert the zone point to a cell point and back to force the snap to grid on drag
-      zonePoint = grid.convert(grid.convert(zonePoint));
-    } else {
-      // Nothing
-    }
     // Don't bother if there isn't any movement
     if (!renderer.hasMoveSelectionSetMoved(tokenBeingDragged.getId(), zonePoint)) {
       return false;
@@ -849,13 +894,7 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
     // Make sure it's a valid move
     boolean isValid;
     if (grid.getSize() >= 9)
-      isValid =
-          validateMove(
-              tokenBeingDragged,
-              renderer.getSelectedTokenSet(),
-              zonePoint,
-              zonePoint.x - tokenBeingDragged.getX(),
-              zonePoint.y - tokenBeingDragged.getY());
+      isValid = validateMove(tokenBeingDragged, renderer.getSelectedTokenSet(), zonePoint, dx, dy);
     else
       isValid = validateMove_legacy(tokenBeingDragged, renderer.getSelectedTokenSet(), zonePoint);
 
@@ -1075,6 +1114,7 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
   protected void installKeystrokes(Map<KeyStroke, Action> actionMap) {
     super.installKeystrokes(actionMap);
 
+    actionMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME, 0), AppActions.NEXT_TOKEN);
     actionMap.put(AppActions.CUT_TOKENS.getKeyStroke(), AppActions.CUT_TOKENS);
     actionMap.put(AppActions.COPY_TOKENS.getKeyStroke(), AppActions.COPY_TOKENS);
     actionMap.put(AppActions.PASTE_TOKENS.getKeyStroke(), AppActions.PASTE_TOKENS);
@@ -1380,7 +1420,10 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
       dragStartY = keyToken.getY();
       startTokenDrag(keyToken);
     }
-
+    if (!isMovingWithKeys) {
+      dragOffsetX = 0;
+      dragOffsetY = 0;
+    }
     // The zone point the token will be moved to after adjusting for dx/dy
     ZonePoint zp = new ZonePoint(dragStartX, dragStartY);
     Grid grid = renderer.getZone().getGrid();
@@ -1389,6 +1432,8 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
       cp.x += dx;
       cp.y += dy;
       zp = grid.convert(cp);
+      dx = zp.x - tokenBeingDragged.getX();
+      dy = zp.y - tokenBeingDragged.getY();
     } else {
       // Scalar for dx/dy in zone space. Defaulting to essentially 1 pixel.
       int moveFactor = 1;
@@ -1402,7 +1447,7 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
       zp = new ZonePoint(x, y);
     }
     isMovingWithKeys = true;
-    handleDragToken(zp);
+    handleDragToken(zp, (int) dx, (int) dy);
   }
 
   private void setWaypoint() {
@@ -1484,6 +1529,28 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
     }
   }
 
+  // class WrappedText
+  // {
+  // int lineCount;
+  // String[] lines;
+  // stringWidth[] widths;
+  // }
+
+  // private WrappedText wrapText(string text)
+  // {
+  // StringBuilder currentLine;
+  // WrappedText wrappedText = new WrappedText();
+  // for(int I = 0;I<text.length();I++){
+  // if(text.charAt(I) == '\n'){
+  // wrappedText.lines
+  // }
+  //
+  // currentLine.append(text.charAt(I));
+  //
+  // }
+  // String[] firstPass = text.split('\n');
+  // }
+
   // //
   // ZoneOverlay
   /*
@@ -1494,7 +1561,7 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
   @Override
   public void paintOverlay(final ZoneRenderer renderer, Graphics2D g) {
     Dimension viewSize = renderer.getSize();
-    renderer.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    FontRenderContext fontRenderContext = g.getFontRenderContext();
 
     Composite composite = g.getComposite();
     if (selectionBoundBox != null) {
@@ -1570,8 +1637,23 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
           SwingUtil.constrainTo(imgSize, AppPreferences.getPortraitSize());
         }
 
+        Dimension statSize = null;
+        int rm = AppStyle.miniMapBorder.getRightMargin();
+        int lm = AppStyle.miniMapBorder.getLeftMargin();
+        int tm = AppStyle.miniMapBorder.getTopMargin();
+        int bm = AppStyle.miniMapBorder.getBottomMargin();
+
         // Stats
+        int maxStatsWidth =
+            viewSize.width
+                - lm
+                - rm * 2
+                - imgSize.width
+                - PADDING * 3
+                - STATSHEET_EXTERIOR_PADDING * 2;
         Map<String, String> propertyMap = new LinkedHashMap<String, String>();
+        Map<String, Integer> propertyLineCount = new LinkedHashMap<String, Integer>();
+        LinkedList<TextLayout> lineLayouts = new LinkedList<TextLayout>();
         if (AppPreferences.getShowStatSheet()) {
           for (TokenProperty property :
               MapTool.getCampaign().getTokenPropertyList(tokenUnderMouse.getPropertyType())) {
@@ -1582,43 +1664,91 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
               if (property.isOwnerOnly() && !AppUtil.playerOwns(tokenUnderMouse)) {
                 continue;
               }
-              Object propertyValue = tokenUnderMouse.getEvaluatedProperty(property.getName());
+              MapToolVariableResolver resolver = new MapToolVariableResolver(tokenUnderMouse);
+              // TODO: is the double resolution of properties necessary here. I kept
+              // it, but it
+              // seems wasteful and I can't figure out any reason that the first
+              // resolution can't be
+              // used
+              // below.
+              resolver.initialize();
+              resolver.setAutoPrompt(false);
+              Object propertyValue =
+                  tokenUnderMouse.getEvaluatedProperty(resolver, property.getName());
+              resolver.flush();
               if (propertyValue != null) {
                 if (propertyValue.toString().length() > 0) {
                   String propName = property.getName();
                   if (property.getShortName() != null) {
                     propName = property.getShortName();
                   }
-                  Object value = tokenUnderMouse.getEvaluatedProperty(property.getName());
+                  Object value = tokenUnderMouse.getEvaluatedProperty(resolver, property.getName());
+                  resolver.flush();
                   propertyMap.put(propName, value != null ? value.toString() : "");
                 }
               }
             }
           }
         }
-        Dimension statSize = null;
-        int rm = AppStyle.miniMapBorder.getRightMargin();
-        int lm = AppStyle.miniMapBorder.getLeftMargin();
-        int tm = AppStyle.miniMapBorder.getTopMargin();
-        int bm = AppStyle.miniMapBorder.getBottomMargin();
         if (tokenUnderMouse.getPortraitImage() != null || !propertyMap.isEmpty()) {
           Font font = AppStyle.labelFont;
           FontMetrics valueFM = g.getFontMetrics(font);
           FontMetrics keyFM = g.getFontMetrics(boldFont);
           int rowHeight = Math.max(valueFM.getHeight(), keyFM.getHeight());
+          int keyWidth = -1;
+          float valueWidth = -1;
+          int layoutWidth = 1;
           if (!propertyMap.isEmpty()) {
             // Figure out size requirements
-            int height = propertyMap.size() * (rowHeight + PADDING);
-            int width = -1;
+            // int height = propertyMap.size() * (rowHeight + PADDING);
+            int height = 0;
+            // Iterate over keys to reserve room for key column
             for (Entry<String, String> entry : propertyMap.entrySet()) {
-              int lineWidth =
-                  SwingUtilities.computeStringWidth(keyFM, entry.getKey())
-                      + SwingUtilities.computeStringWidth(valueFM, "  " + entry.getValue());
-              if (width < 0 || lineWidth > width) {
-                width = lineWidth;
+              int tempKeyWidth = SwingUtilities.computeStringWidth(keyFM, entry.getKey());
+              if (keyWidth < 0 || tempKeyWidth > keyWidth) {
+                keyWidth = tempKeyWidth;
               }
             }
-            statSize = new Dimension(width + PADDING * 3, height);
+            layoutWidth = Math.max(1, maxStatsWidth - keyWidth);
+            // Iterate over values, break them into lines as necessary. Figure out
+            // longest value
+            // length.
+            for (Entry<String, String> entry : propertyMap.entrySet()) {
+              int lineCount = 0;
+              for (String line : entry.getValue().split("\n")) {
+                if (line.length() > 0) {
+                  // For each value, make the iterator need and stash data about
+                  // it
+                  AttributedString text = new AttributedString(line);
+                  text.addAttribute(TextAttribute.FONT, font);
+                  AttributedCharacterIterator paragraph = text.getIterator();
+                  int paragraphStart = paragraph.getBeginIndex();
+                  int paragraphEnd = paragraph.getEndIndex();
+                  // Make and initialize LineBreakMeasurer
+                  LineBreakMeasurer lineMeasurer =
+                      new LineBreakMeasurer(
+                          paragraph, BreakIterator.getLineInstance(), fontRenderContext);
+                  lineMeasurer.setPosition(paragraphStart);
+                  // Get each line from the measurer and find the widest one;
+                  while (lineMeasurer.getPosition() < paragraphEnd) {
+                    TextLayout layout = lineMeasurer.nextLayout(layoutWidth);
+                    lineLayouts.add(layout);
+                    height += rowHeight;
+                    float tmpValueWidth = layout.getPixelBounds(null, 0, 0).width;
+                    lineCount++;
+                    if (valueWidth < 0 || tmpValueWidth > valueWidth) {
+                      valueWidth = tmpValueWidth;
+                    }
+                  }
+                } else {
+                  height += rowHeight;
+                  lineCount++;
+                }
+              }
+              propertyLineCount.put(entry.getKey(), lineCount);
+              height += PADDING;
+            }
+            statSize = new Dimension((int) (keyWidth + valueWidth + PADDING * 3), height);
           }
           // Create the space for the image
           int width = imgSize.width + (statSize != null ? statSize.width + rm : 0) + lm + rm;
@@ -1659,20 +1789,58 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
               // Box
               statsG.setColor(new Color(249, 241, 230, 140));
               statsG.fillRect(
-                  bounds.x, y - keyFM.getAscent(), bounds.width - PADDING / 2, rowHeight);
+                  bounds.x,
+                  y - keyFM.getAscent(),
+                  bounds.width - PADDING / 2,
+                  rowHeight * propertyLineCount.get(entry.getKey()));
               statsG.setColor(new Color(175, 163, 149));
               statsG.drawRect(
-                  bounds.x, y - keyFM.getAscent(), bounds.width - PADDING / 2, rowHeight);
+                  bounds.x,
+                  y - keyFM.getAscent(),
+                  bounds.width - PADDING / 2,
+                  rowHeight * propertyLineCount.get(entry.getKey()));
 
-              // Values
+              // Draw Key
               statsG.setColor(Color.black);
               statsG.setFont(boldFont);
               statsG.drawString(entry.getKey(), bounds.x + PADDING * 2, y);
-              statsG.setFont(font);
-              int strw = SwingUtilities.computeStringWidth(valueFM, entry.getValue());
-              statsG.drawString(entry.getValue(), bounds.x + bounds.width - strw - PADDING, y);
 
-              y += PADDING + rowHeight;
+              // Draw Value
+              for (String line : entry.getValue().split("\n")) {
+                if (line.length() > 0) {
+                  // For each value, make the iterator need and stash data about
+                  // it
+                  AttributedString text = new AttributedString(line);
+                  text.addAttribute(TextAttribute.FONT, font);
+                  AttributedCharacterIterator paragraph = text.getIterator();
+                  int paragraphStart = paragraph.getBeginIndex();
+                  int paragraphEnd = paragraph.getEndIndex();
+                  // Make and initialize LineBreakMeasurer
+                  LineBreakMeasurer lineMeasurer =
+                      new LineBreakMeasurer(
+                          paragraph, BreakIterator.getLineInstance(), fontRenderContext);
+                  lineMeasurer.setPosition(paragraphStart);
+                  // Get each line from the measurer and find the widest one;
+                  while (lineMeasurer.getPosition() < paragraphEnd) {
+                    TextLayout layout = lineMeasurer.nextLayout(layoutWidth);
+                    layout.draw(
+                        statsG,
+                        bounds.x + bounds.width - PADDING - layout.getPixelBounds(null, 0, 0).width,
+                        y);
+                    y += rowHeight;
+                  }
+                } else {
+                  y += rowHeight;
+                }
+              }
+
+              // statsG.setFont(font);
+              // int strw = SwingUtilities.computeStringWidth(valueFM,
+              // entry.getValue());
+              // statsG.drawString(entry.getValue(), bounds.x + bounds.width - strw
+              // -PADDING, y);
+
+              y += PADDING;
             }
           }
 
@@ -1719,7 +1887,11 @@ public class PointerTool extends DefaultTool implements ZoneOverlay {
 
     // Jamz: Statsheet was still showing on drag, added other tests to hide statsheet as well
     if (statSheet != null && !isDraggingToken && !mouseButtonDown) {
-      g.drawImage(statSheet, 5, viewSize.height - statSheet.getHeight() - 5, this);
+      g.drawImage(
+          statSheet,
+          STATSHEET_EXTERIOR_PADDING,
+          viewSize.height - statSheet.getHeight() - STATSHEET_EXTERIOR_PADDING,
+          this);
     }
 
     // Hovers

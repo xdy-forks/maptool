@@ -118,11 +118,11 @@ public abstract class DataTemplate {
    *
    * <pre>
    * public String getTreePath() {
-   *     return "Campaign/Maps";
+   * 	return "Campaign/Maps";
    * }
    *
    * public void prepareForDisplay() {
-   *     addDataObjects(Zone.getAllZones());
+   * 	addDataObjects(Zone.getAllZones());
    * }
    * </pre>
    */

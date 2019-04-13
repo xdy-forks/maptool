@@ -102,6 +102,10 @@ public class DrawPanelTreeCellRenderer extends DefaultTreeCellRenderer {
       int perc = (int) (pen.getOpacity() * 100);
       result = result + String.format(" opacity %s%%", perc);
     }
+    if (drawing instanceof AbstractDrawing) {
+      String dName = ((AbstractDrawing) drawing).getName();
+      if (dName != null && !"".equals(dName)) result = dName + ": " + result;
+    }
     return result;
   }
 

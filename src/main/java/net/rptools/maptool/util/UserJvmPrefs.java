@@ -27,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jdk.packager.services.UserJvmOptionsService;
 import net.rptools.maptool.client.AppUtil;
+import net.rptools.maptool.client.MapTool;
+import net.rptools.maptool.language.I18N;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
@@ -185,6 +187,7 @@ public class UserJvmPrefs {
 
     if (!m.find()) {
       // If we don't find a valid memory setting return false
+      MapTool.showError(I18N.getText("msg.error.jvm.options", s));
       return false;
     } else {
       // Don't allow values less than 0
