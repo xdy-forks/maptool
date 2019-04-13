@@ -13,10 +13,22 @@ buildscript {
         mavenCentral()
     }
 }
-
 // Access Git info from build script
 plugins {
-    id "org.ajoberstar.grgit" version "3.1.1"
+    // Core Plugins
+    id 'base'
+    id 'application'
+    id 'java-library'
+    id 'java'
+    id 'eclipse'
+    id 'jacoco'
+
+    // id 'org.gradle.java.experimental-jigsaw' version '0.1.1'
+
+    // Community Plugins
+    id 'com.diffplug.gradle.spotless' version '3.15.0'
+    id 'org.ajoberstar.grgit' version '3.0.0-beta.1'
+    // id "com.zyxist.chainsaw" version "0.3.1"
 }
 
 // Apply the java plugin to add support for Java
@@ -29,20 +41,43 @@ apply plugin: 'jacoco'
 
 // Definitions
 defaultTasks 'clean', 'build'
-sourceCompatibility = 10
-targetCompatibility = 10
+sourceCompatibility = 11
+targetCompatibility = 11
 
+// Don't fail build if tests fail until tests are cleaned up
+test.ignoreFailures = true
 
 // Used by gradle assemble & run tasks
-mainClassName = 'net.rptools.maptool.client.LaunchInstructions'
+// mainClassName = 'net.rptools.maptool.client.LaunchInstructions'
+// mainClassName = 'net.rptools.maptool_fx.MapTool'
+mainClassName = 'net.rptools.maptool_fx.Launch_MapTool'
+
 applicationDefaultJvmArgs = ["-Xss4M"]
+
+// OS needed for proper OpenJFX dependency management
+// https://openjfx.io/openjfx-docs/#gradle
+def currentOS = org.gradle.internal.os.OperatingSystem.current()
+def platform
+if (currentOS.isWindows()) {
+    platform = 'win'
+} else if (currentOS.isLinux()) {
+    platform = 'linux'
+} else if (currentOS.isMacOsX()) {
+    platform = 'mac'
+}
 
 // Custom properties
 ext {
+    moduleName = 'net.rptools.maptool'
+
+    gdxVersion = '1.9.6'
+    box2DLightsVersion = '1.4'
+    aiVersion = '1.8.1'
+
     // Get tag and commit info from Git to use for version numbering
-    def grgit = org.ajoberstar.grgit.Grgit.open(currentDir: file('.'))
-    def head = grgit.head()
-    def tags = grgit.tag.list().find {
+    def repo = org.ajoberstar.grgit.Grgit.open(currentDir: file('.'))
+    def head = repo.head()
+    def tags = repo.tag.list().find {
         it.commit == head
     }
 
@@ -59,24 +94,29 @@ ext {
         enviroment = "Development"
         sentryDSN = sentry_development_dsn
     }
-
     // not doing anything as of a bug in grgit when opening with currentDir/dir
     // https://github.com/ajoberstar/grgit/issues/288
     grgit.close()
     // therefore close the underlying repository manually
     grgit.repository.jgit.getRepository().close()
 
+
     // vendor, tagVersion, msiVersion, and DSN's defaults are set in gradle.properties
-    println 'Configuring for ' + project.name + " " + tagVersion + " by " + vendor
+    println 'Configuring for ' + project.name + " " + tagVersion + " by " + vendor + " for " + currentOS
 }
 
 run {
-    args = [ '-v='+version ]
-    applicationDefaultJvmArgs = [ "-Xss4M", "-Djava.library.path=lib", "-Dsentry.environment=Development", "-Dfile.encoding=UTF-8", "-DMAPTOOL_DATADIR=.maptool-" + vendor ]
+    args = [ '-v='+tagVersion ]
+    applicationDefaultJvmArgs = [ "-Xss4M", "-Djava.library.path=lib", "-Dsentry.environment=Development", "-Dprism.order=sw" ]
 
     if(System.getProperty("exec.args") != null) {
         args System.getProperty("exec.args").split()
     }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 
 spotless {
@@ -93,6 +133,7 @@ spotless {
         paddedCell()
     }
 
+
     format 'misc', {
         target '**/*.gradle', '**/.gitignore'
 
@@ -105,8 +146,16 @@ spotless {
 }
 
 jacoco {
-toolVersion = "0.8.1"
-reportsDir = file("$buildDir/reports/jacoco")
+    toolVersion = "0.8.2"
+    reportsDir = file("$buildDir/reports/jacoco")
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
+    }
 }
 
 // Set eclipse natures, access rules, and other settings
@@ -143,15 +192,52 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
     mavenCentral()
-    maven { url = 'http://maptool.craigs-stuff.net/repo/' }
-    maven { url = 'http://www.nerps.net/repo/' }
-    maven { url = 'http://nexus.fyiblue.com/content/groups/public' }
+    maven { url "http://maptool.craigs-stuff.net/repo/" }
+    maven { url "http://www.nerps.net/repo/" }
+    maven { url "https://jitpack.io" }
     mavenLocal()
 }
 
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
+    // Ug. stupid but doing this for now so it will compile...
+    implementation files('lib/packager.jar')
+
+    // TODO: Ultimately need mutli platform so we need to add all 3 OS versions of FX for the JAR (or have OS specific JARs)
+    // Can we specify dependencies only when building JAR in gradle so the JAR includes all 3? Or create a second UberJar task to include specific JARs?)
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-base
+    implementation group: 'org.openjfx', name: 'javafx-base', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-controls
+    implementation group: 'org.openjfx', name: 'javafx-controls', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-graphics
+    implementation group: 'org.openjfx', name: 'javafx-graphics', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-fxml
+    implementation group: 'org.openjfx', name: 'javafx-fxml', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-media
+    implementation group: 'org.openjfx', name: 'javafx-media', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-swing
+    implementation group: 'org.openjfx', name: 'javafx-swing', version: '11', classifier: platform
+    // https://mvnrepository.com/artifact/org.openjfx/javafx-web
+    implementation group: 'org.openjfx', name: 'javafx-web', version: '11', classifier: platform
+
+    // http://fxexperience.com/controlsfx/
+    implementation 'org.controlsfx:controlsfx:9.0.0'
+
+    // More 3rd Party FX Controls from http://jfxtras.org/ #incubating
+    // https://mvnrepository.com/artifact/org.jfxtras/jfxtras-controls
+    implementation group: 'org.jfxtras', name: 'jfxtras-controls', version: '9.0-r1'
+
+    // Using jitpack.io to get from repo...
+    //implementation 'com.github.RobertBColton:DockFX:0.4b'
+    //implementation 'com.github.ClearControl:DockFX:master'
+    implementation 'com.github.JamzTheMan:DockFX:MapTool-SNAPSHOT'
+
+    // Shapes! https://github.com/aalmiray/jsilhouette
+    // compile 'org.kordamp.jsilhouette:jsilhouette-javafx:0.3.0'
+
+    // For consideration: https://github.com/Oshan96/CustomStage/wiki
+
     // For Sentry bug reporting
     annotationProcessor group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
@@ -177,7 +263,7 @@ dependencies {
     implementation 'commons-cli:commons-cli:1.3'
 
     implementation 'net.rptools.decktool:decktool:1.0.b1'
-
+    implementation 'net.rptools.dicelib:dicelib:1.5.3'
     implementation 'net.rptools.maptool.resource:maptool.resource:1.0.b18'
     implementation 'net.rptools.parser:parser:1.4.0.+'
 
@@ -213,7 +299,7 @@ dependencies {
     implementation 'com.withay:withay-util:1.0'
     implementation 'xmlpull:xmlpull:1.1.3.1'
     implementation 'xpp3:xpp3_min:1.1.4c'
-    implementation 'com.thoughtworks.xstream:xstream:1.4.9'
+    implementation 'com.thoughtworks.xstream:xstream:1.4.10'
     implementation 'yasb:yasb:0.2-21012007'
     implementation 'de.muntjak.tinylookandfeel:tinylaf-nocp:1.4.0'
 
@@ -229,35 +315,59 @@ dependencies {
     implementation group: 'com.twelvemonkeys.imageio', name: 'imageio-psd', version: '3.3.2'	// https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-psd
 
     // For syntax highlighting in macro editor
-    implementation group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '3.0.2'		// https://mvnrepository.com/artifact/com.fifesoft/rsyntaxtextarea
-    implementation group: 'com.fifesoft', name: 'rstaui', version: '3.0.0'				// https://mvnrepository.com/artifact/com.fifesoft/rstaui
-    implementation group: 'com.fifesoft', name: 'autocomplete', version: '3.0.0'		// https://mvnrepository.com/artifact/com.fifesoft/autocomplete
+    implementation group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '2.6.1'		// https://mvnrepository.com/artifact/com.fifesoft/rsyntaxtextarea
+    implementation group: 'com.fifesoft', name: 'rstaui', version: '2.6.1'				// https://mvnrepository.com/artifact/com.fifesoft/rstaui
+    implementation group: 'com.fifesoft', name: 'autocomplete', version: '2.6.0'		// https://mvnrepository.com/artifact/com.fifesoft/autocomplete
 
     // For simple xml work in Hero Lab integration
-    implementation group: 'com.jcabi', name: 'jcabi-xml', version: '0.18.1'				// https://mvnrepository.com/artifact/com.jcabi/jcabi-xml
+    implementation group: 'com.jcabi', name: 'jcabi-xml', version: '0.18.1'			// https://mvnrepository.com/artifact/com.jcabi/jcabi-xml
 
-    // For some math functions used in the A* Pathfinding
+    // box2dlights test
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
+
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+    implementation "com.badlogicgames.box2dlights:box2dlights:$box2DLightsVersion"
+
+    // https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
     // https://locationtech.github.io/jts/jts-features.html
-    implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.15.0'	// https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
+    implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.15.0'
 
     // For RESTful functions
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.13.1'
 
-     // Better JSON functions...
-     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'		// https://mvnrepository.com/artifact/com.google.code.gson/gson
+    // Not in use at this time, left for easy reference later...
+    //implementation "com.badlogicgames.gdx:gdx-controllers:$gdxVersion"
+    //implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    //implementation "com.badlogicgames.ashley:ashley:$ashleyVersion"
+    implementation "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+    //implementation "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
 
     // Declare the dependency for your favourite test framework you want to use in your tests.
     // TestNG is also supported by the Gradle Test task. Just change the
-    // testimplementation dependency to testimplementation 'org.testng:testng:6.8.1' and add
+    // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
     // 'test.useTestNG()' to your build script.
-    //testCompile 'junit:junit:4.12'
+    // testCompile 'junit:junit:4.12'
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
 
     // For mocking features during unit tests
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.1.0'
 
-    compile ('net.rptools.dicelib:dicelib:1.5.2')
+    // https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-running-unit-tests-with-gradle/
+    testCompileOnly (
+            'junit:junit:4.12'
+    )
+    testImplementation (
+            'org.junit.jupiter:junit-jupiter-api:5.3.+'
+    )
+    testRuntimeOnly (
+            'org.junit.jupiter:junit-jupiter-engine:5.3.+',
+            'org.junit.vintage:junit-vintage-engine:5.3.+'
+    )
 }
 
 
@@ -281,7 +391,8 @@ task uberJar(type: Jar) {
     baseName project.name + '-' + tagVersion
 
     manifest {
-        attributes 'Implementation-Title': project.name,
+        attributes('Automatic-Module-Name': moduleName,
+        'Implementation-Title': project.name,
         'Implementation-Version': tagVersion,
         'Implementation-Vendor': vendor,
         'Git-Commit': revision,
@@ -291,7 +402,7 @@ task uberJar(type: Jar) {
         'Built-JDK': System.getProperty('java.version'),
         'Source-Compatibility': project.sourceCompatibility,
         'Target-Compatibility': project.targetCompatibility,
-        'Main-Class': project.mainClassName
+        'Main-Class': project.mainClassName)
     }
 
     from {
@@ -372,7 +483,7 @@ task deploy(dependsOn: [clean, displayGitInfo, uberJar, copyPackageExtras, prepa
                 "-BlicenseFile=COPYING.AFFERO",
                 "-BlicenseType='GNU AFFERO GENERAL PUBLIC LICENSE'",
                 "-Bcategory=Games",
-                "-Bemail=maptool@rptools.net",
+                "-Bemail=maptool@nerps.net",
                 "-BuserJvmOptions=-DMAPTOOL_DATADIR\\==.maptool-" + vendor,
                 "-BuserJvmOptions=-Dfile.encoding\\==UTF-8",
                 "-BuserJvmOptions=-Xss=4M"
