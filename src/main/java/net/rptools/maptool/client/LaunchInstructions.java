@@ -50,10 +50,12 @@ public class LaunchInstructions {
     try {
       MapTool.main(args);
     } catch (Exception | Error e) {
-      System.out.println(
-          String.format(
-              I18N.getString("msg.error.javaVersionNotSupported"),
-              System.getProperty("java.specification.version")));
+      msg =
+          I18N.getText(
+              "msg.error.javaVersionNotSupported",
+              System.getProperty("java.specification.version"));
+      System.out.println(msg);
+      System.out.println(e);
       System.exit(1);
     }
     AppUpdate.gitHubReleases();
