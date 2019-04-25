@@ -68,6 +68,7 @@ import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.ErrorStrip;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
@@ -352,6 +353,7 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
             .setSelected(properties.getCompareApplyToSelectedTokens());
         getAllowPlayerEditsCheckBox().setSelected(properties.getAllowPlayerEdits());
         getToolTipTextField().setText(properties.getToolTip());
+        getDisplayHotkeyCheckBox().setSelected(properties.getDisplayHotKey());
 
         if (isCommonMacro) {
           getColorComboBox().setEnabled(false);
@@ -389,6 +391,14 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
         (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
     atmf.putMapping(
         "text/MapToolScript", "net.rptools.maptool.client.ui.syntax.MapToolScriptSyntax");
+
+    // Expanding use of tooltip - already accepts HTML so lets show it
+    getToolTipTextField().setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML);
+    getToolTipTextField().setLineWrap(true);
+    getToolTipTextField().setWrapStyleWord(true);
+    getToolTipTextField().setTabSize(2);
+
+    // Macro Editor setup
     macroEditorRSyntaxTextArea.setSyntaxEditingStyle("text/MapToolScript");
 
     macroEditorRSyntaxTextArea.setEditable(true);
@@ -406,6 +416,7 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     ac.setAutoActivationEnabled(true);
     ac.setAutoActivationDelay(500);
     ac.setShowDescWindow(true);
+    ac.setAutoCompleteSingleChoices(false);
     ac.install(macroEditorRSyntaxTextArea);
 
     // Set the color style via Theme
@@ -426,7 +437,10 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
                   .getResourceAsStream("/net/rptools/maptool/client/ui/syntax/themes/nerps.xml"));
       // Theme theme =
       // Theme.load(getClass().getResourceAsStream("/net/rptools/maptool/client/ui/syntax/themes/nerps-dark.xml"));
+
       theme.apply(macroEditorRSyntaxTextArea);
+      theme.apply(getToolTipTextField());
+
       macroEditorRSyntaxTextArea.revalidate();
     } catch (IOException e) {
       e.printStackTrace();
@@ -453,13 +467,18 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     csp = new CollapsibleSectionPanel();
     ((GridView) panel.getComponentByName("macroEditorPanel")).add(csp);
 
-    ErrorStrip errorStrip = new ErrorStrip(macroEditorRSyntaxTextArea);
-    csp.add(errorStrip, BorderLayout.LINE_END);
+    csp.add(new ErrorStrip(macroEditorRSyntaxTextArea), BorderLayout.LINE_END);
 
     RTextScrollPane macroEditorRTextScrollPane = new RTextScrollPane(macroEditorRSyntaxTextArea);
     macroEditorRTextScrollPane.setLineNumbersEnabled(true);
     // replaceComponent("macroEditorPanel", "macroEditorRTextScrollPane",
     // macroEditorRTextScrollPane);
+
+    csp.add(new ErrorStrip(getToolTipTextField()), BorderLayout.LINE_END);
+
+    //    RTextScrollPane macroEditorRTextScrollPane = new
+    // RTextScrollPane(macroEditorRSyntaxTextArea);
+    //    macroEditorRTextScrollPane.setLineNumbersEnabled(true);
 
     csp.add(macroEditorRTextScrollPane);
   }
@@ -497,7 +516,7 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     JMenuBar mb = MapTool.getFrame().getJMenuBar();
     for (int i = 0; i < mb.getMenuCount(); i++) {
       JMenu menu = mb.getMenu(i);
-      if (menu.getText().equalsIgnoreCase("Edit")) {
+      if (menu.getText().equalsIgnoreCase(I18N.getText("menu.edit"))) {
         // This is the menu we want to add onto...
         addMenuItems(menu);
         return;
@@ -544,7 +563,7 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     JMenuBar mb = MapTool.getFrame().getJMenuBar();
     for (int i = 0; i < mb.getMenuCount(); i++) {
       JMenu menu = mb.getMenu(i);
-      if (menu.getText().equalsIgnoreCase("Edit")) {
+      if (menu.getText().equalsIgnoreCase(I18N.getText("menu.edit"))) {
         // This is the menu we want to cleanup...
         removeMenuItems(menu, menu.getItemCount());
         return;
@@ -686,6 +705,7 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
         getCompareApplyToSelectedTokensCheckBox().isSelected());
     properties.setAllowPlayerEdits(getAllowPlayerEditsCheckBox().isSelected());
     properties.setToolTip(getToolTipTextField().getText());
+    properties.setDisplayHotKey(getDisplayHotkeyCheckBox().isSelected());
 
     properties.save();
 
@@ -850,8 +870,12 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     return panel.getCheckBox("allowPlayerEditsCheckBox");
   }
 
-  private JTextField getToolTipTextField() {
-    return panel.getTextField("toolTip");
+  private JCheckBox getDisplayHotkeyCheckBox() {
+    return panel.getCheckBox("displayHotKeyCheckBox");
+  }
+
+  private RSyntaxTextArea getToolTipTextField() {
+    return (RSyntaxTextArea) panel.getComponentByName("toolTip");
   }
 
   // Begin comparison customization
@@ -937,6 +961,9 @@ public class MacroButtonDialog extends JDialog implements SearchListener {
     getAllowPlayerEditsCheckBox().setText(I18N.getText("component.label.macro.allowPlayerEdits"));
     getAllowPlayerEditsCheckBox()
         .setToolTipText(I18N.getText("component.tooltip.macro.allowPlayerEdits"));
+    getDisplayHotkeyCheckBox().setText(I18N.getText("component.label.macro.displayHotKey"));
+    getDisplayHotkeyCheckBox()
+        .setToolTipText(I18N.getText("component.tooltip.macro.displayHotKey"));
     ((TitledBorder) ((GridView) panel.getComponentByName("macroComparisonGridView")).getBorder())
         .setTitle(I18N.getText("component.label.macro.macroCommonality"));
     getCompareIncludeLabelCheckBox()

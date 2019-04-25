@@ -15,4 +15,11 @@ include 'api'
 include 'services:webservice'
 */
 
-rootProject.name = 'maptool'
+rootProject.name = 'MapTool'
+
+
+sourceControl {
+    gitRepository(uri("https://github.com/RPTools/dicelib")) {
+        producesModule("net.rptools.dicelib:dicelib")
+    }
+}
