@@ -27,7 +27,6 @@ import javax.swing.Scrollable;
 import javax.swing.SwingUtilities;
 import net.rptools.lib.AppEvent;
 import net.rptools.lib.AppEventListener;
-import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.ui.macrobuttons.buttongroups.AreaGroup;
 import net.rptools.maptool.client.ui.macrobuttons.buttongroups.ButtonGroup;
 import net.rptools.maptool.client.ui.macrobuttons.buttongroups.ButtonGroupPopupMenu;

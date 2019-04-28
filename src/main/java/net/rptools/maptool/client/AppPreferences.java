@@ -27,7 +27,6 @@ import net.rptools.maptool.client.walker.WalkerMetric;
 import net.rptools.maptool.model.GridFactory;
 import net.rptools.maptool.model.Token;
 import net.rptools.maptool.model.Zone;
-import net.rptools.maptool_fx.MapTool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -420,10 +419,13 @@ public class AppPreferences {
   private static final String KEY_FILE_SYNC_PATH = "fileSyncPath";
   private static final String DEFAULT_FILE_SYNC_PATH = "";
 
-  private static final String SKIP_AUTO_UPDATE = "skipAutoUpdate";
+  private static final String KEY_SKIP_AUTO_UPDATE = "skipAutoUpdate";
   private static final boolean DEFAULT_SKIP_AUTO_UPDATE = false;
-  private static final String SKIP_AUTO_UPDATE_COMMIT = "skipAutoUpdateCommit";
+  private static final String KEY_SKIP_AUTO_UPDATE_COMMIT = "skipAutoUpdateCommit";
   private static final String DEFAULT_SKIP_AUTO_UPDATE_COMMIT = "";
+
+  private static final String KEY_ALLOW_EXTERNAL_MACRO_ACCESS = "allowExternalMacroAccess";
+  private static final boolean DEFAULT_ALLOW_EXTERNAL_MACRO_ACCESS = false;
 
   public static void setTypingNotificationDuration(int ms) {
     prefs.putInt(KEY_TYPING_NOTIFICATION_DURATION, ms);
@@ -832,20 +834,19 @@ public class AppPreferences {
   }
 
   public static boolean getSkipAutoUpdate() {
-    return prefs.getBoolean(SKIP_AUTO_UPDATE, DEFAULT_SKIP_AUTO_UPDATE);
+    return prefs.getBoolean(KEY_SKIP_AUTO_UPDATE, DEFAULT_SKIP_AUTO_UPDATE);
   }
 
   public static void setSkipAutoUpdate(boolean value) {
-    prefs.putBoolean(SKIP_AUTO_UPDATE, value);
+    prefs.putBoolean(KEY_SKIP_AUTO_UPDATE, value);
   }
 
   public static String getSkipAutoUpdateCommit() {
-    return prefs.get(SKIP_AUTO_UPDATE_COMMIT, DEFAULT_SKIP_AUTO_UPDATE_COMMIT);
+    return prefs.get(KEY_SKIP_AUTO_UPDATE_COMMIT, DEFAULT_SKIP_AUTO_UPDATE_COMMIT);
   }
 
   public static void setSkipAutoUpdateCommit(String commit) {
-    prefs.put(SKIP_AUTO_UPDATE_COMMIT, commit);
-    return prefs.getBoolean(KEY_SKIP_AUTO_UPDATE, DEFAULT_SKIP_AUTO_UPDATE);
+    prefs.put(KEY_SKIP_AUTO_UPDATE_COMMIT, commit);
   }
 
   public static boolean getAllowExternalMacroAccess() {
@@ -1006,8 +1007,8 @@ public class AppPreferences {
   // prevents the updates from getting out of sync as they can today.
   // Note: This is a HACK to fix a broken system, but we're not going to invest anymore time into
   // the current classes. REWRITE ME!
-  private static final String INIT_ENABLE_SERVER_SYNC = "initEnableServerSync";
-  private static final boolean DEFAULT_INIT_ENABLE_SERVER_SYNC = false;
+  // private static final String INIT_ENABLE_SERVER_SYNC = "initEnableServerSync";
+  // private static final boolean DEFAULT_INIT_ENABLE_SERVER_SYNC = true;
 
   private static final String INIT_SHOW_TOKENS = "initShowTokens";
   private static final boolean DEFAULT_INIT_SHOW_TOKENS = true;
@@ -1030,13 +1031,13 @@ public class AppPreferences {
   private static final String INIT_LOCK_MOVEMENT = "initLockMovement";
   private static final boolean DEFAULT_INIT_LOCK_MOVEMENT = false;
 
-  public static boolean getInitEnableServerSync() {
-    return prefs.getBoolean(INIT_ENABLE_SERVER_SYNC, DEFAULT_INIT_ENABLE_SERVER_SYNC);
-  }
-
-  public static void setInitEnableServerSync(boolean enableSync) {
-    prefs.putBoolean(INIT_ENABLE_SERVER_SYNC, enableSync);
-  }
+  // public static boolean getInitEnableServerSync() {
+  // return prefs.getBoolean(INIT_ENABLE_SERVER_SYNC, DEFAULT_INIT_ENABLE_SERVER_SYNC);
+  // }
+  //
+  // public static void setInitEnableServerSync(boolean enableSync) {
+  // prefs.putBoolean(INIT_ENABLE_SERVER_SYNC, enableSync);
+  // }
 
   public static boolean getInitShowTokens() {
     return prefs.getBoolean(INIT_SHOW_TOKENS, DEFAULT_INIT_SHOW_TOKENS);

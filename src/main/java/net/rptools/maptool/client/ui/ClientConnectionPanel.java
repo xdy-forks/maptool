@@ -53,8 +53,10 @@ public class ClientConnectionPanel extends JList {
 
   private JPopupMenu createPopupMenu() {
     JPopupMenu menu = new JPopupMenu();
+    /* FIXME 2.0 merge
     menu.add(new JMenuItem(AppActions.BOOT_CONNECTED_PLAYER));
     menu.add(new JMenuItem(AppActions.WHISPER_PLAYER));
+    */
     return menu;
   }
 }

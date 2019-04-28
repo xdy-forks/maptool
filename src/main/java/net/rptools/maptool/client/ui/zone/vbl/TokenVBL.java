@@ -15,12 +15,17 @@
 package net.rptools.maptool.client.ui.zone.vbl;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
+import net.rptools.lib.swing.SwingUtil;
+import net.rptools.maptool.client.ui.zone.ZoneRenderer;
 import net.rptools.maptool.model.Token;
 import net.rptools.maptool.util.ImageManager;
+import net.rptools.maptool_fx.MapTool;
 
 /**
  * A utility class that creates and returns an Area based on image pixels. A few convenience methods

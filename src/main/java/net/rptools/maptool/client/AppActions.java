@@ -1325,6 +1325,24 @@ public class AppActions {
         }
       };
 
+  public static final Action TOGGLE_LOG_CONSOLE =
+      new DefaultClientAction() {
+        {
+          init("action.openLogConsole");
+        }
+
+        @Override
+        public boolean isSelected() {
+          return AppState.isLoggingToConsole();
+        }
+
+        @Override
+        public void execute(ActionEvent e) {
+          AppState.setLoggingToConsole(!AppState.isLoggingToConsole());
+          // FIXME 2.0 Merge MapTool.getLogConsoleNoteFrame().setVisible(AppState.isLoggingToConsole());
+        }
+      };
+
   public static final Action TOGGLE_SHOW_MOVEMENT_MEASUREMENTS =
       new DefaultClientAction() {
         {

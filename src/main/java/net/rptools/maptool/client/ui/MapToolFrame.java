@@ -88,7 +88,6 @@ import net.rptools.maptool.client.AppPreferences;
 import net.rptools.maptool.client.AppState;
 import net.rptools.maptool.client.AppStyle;
 import net.rptools.maptool.client.AppUtil;
-import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.ServerDisconnectHandler;
 import net.rptools.maptool.client.swing.AppHomeDiskSpaceStatusBar;
 import net.rptools.maptool.client.swing.AssetCacheStatusBar;
@@ -136,6 +135,7 @@ import net.rptools.maptool.model.drawing.DrawableTexturePaint;
 import net.rptools.maptool.model.drawing.DrawnElement;
 import net.rptools.maptool.model.drawing.Pen;
 import net.rptools.maptool.util.ImageManager;
+import net.rptools.maptool_fx.MapTool;
 import net.rptools.maptool_fx.stub.DockingManagerStub;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.logging.log4j.LogManager;
@@ -1668,96 +1668,6 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
     }
   }
 
-  // WINDOW LISTENER
-  public void windowOpened(WindowEvent e) {}
-
-  public void windowClosing(WindowEvent e) {
-    if (!confirmClose()) {
-      return;
-    }
-    closingMaintenance();
-  }
-
-  public boolean confirmClose() {
-    if (MapTool.isHostingServer()) {
-      if (!MapTool.confirm("msg.confirm.hostingDisconnect")) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  public void closingMaintenance() {
-    if (AppPreferences.getSaveReminder()) {
-      if (MapTool.getPlayer().isGM()) {
-        int result =
-            MapTool.confirmImpl(
-                I18N.getText("msg.title.saveCampaign"),
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                "msg.confirm.saveCampaign",
-                (Object[]) null);
-        // int result = JOptionPane.showConfirmDialog(MapTool.getFrame(),
-        // I18N.getText("msg.confirm.saveCampaign"), I18N.getText("msg.title.saveCampaign"),
-        // JOptionPane.YES_NO_CANCEL_OPTION);
-
-        if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
-          return;
-        }
-        if (result == JOptionPane.YES_OPTION) {
-          final Observer callback =
-              new Observer() {
-                public void update(java.util.Observable o, Object arg) {
-                  if (arg instanceof String) {
-                    // There was an error during the save -- don't terminate MapTool!
-                  } else {
-                    MapTool.getFrame().close();
-                  }
-                }
-              };
-          ActionEvent ae = new ActionEvent(callback, 0, "close");
-          AppActions.SAVE_CAMPAIGN.actionPerformed(ae);
-          return;
-        }
-      } else {
-        if (!MapTool.confirm("msg.confirm.disconnecting")) {
-          return;
-        }
-      }
-    }
-    close();
-  }
-
-  public void close() {
-    ServerDisconnectHandler.disconnectExpected = true;
-    MapTool.disconnect();
-
-    getDockingManager()
-        .saveLayoutDataToFile(AppUtil.getAppHome("config").getAbsolutePath() + "/layout.dat");
-
-    // If closing cleanly, remove the autosave file
-    MapTool.getAutoSaveManager().purge();
-    setVisible(false);
-
-    EventQueue.invokeLater(
-        new Runnable() {
-          public void run() {
-            dispose();
-          }
-        });
-  }
-
-  public void windowClosed(WindowEvent e) {
-    System.exit(0);
-  }
-
-  public void windowIconified(WindowEvent e) {}
-
-  public void windowDeiconified(WindowEvent e) {}
-
-  public void windowActivated(WindowEvent e) {}
-
-  public void windowDeactivated(WindowEvent e) {}
-
   // Windows OS defaults F10 to the menu bar, noooooo!! We want for macro buttons.
   // XXX Shouldn't this keystroke be configurable via the properties file anyway?
   // XXX Doesn't work for Mac OSX and isn't called in that case.
@@ -1991,4 +1901,45 @@ public class MapToolFrame extends JFrame implements WindowListener, AppEventList
     }
   }
 
+  @Override
+  public void windowOpened(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowClosing(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowClosed(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowIconified(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowDeiconified(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowActivated(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void windowDeactivated(WindowEvent e) {
+    // TODO Auto-generated method stub
+
+  }
 }

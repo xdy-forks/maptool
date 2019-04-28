@@ -23,7 +23,14 @@ public class LogHelper {
     org.apache.logging.log4j.core.Logger loggerImpl = (org.apache.logging.log4j.core.Logger) log;
     Appender appender = loggerImpl.getAppenders().get("LogFile");
 
-    if (appender != null) return ((FileAppender) appender).getFileName();
+    if (appender != null) {
+      if (appender instanceof FileAppender) {
+        return ((FileAppender) appender).getFileName();
+      } else {
+        return appender.getName();
+      }
+
+    }
     else return "NOT_CONFIGURED";
   }
 }

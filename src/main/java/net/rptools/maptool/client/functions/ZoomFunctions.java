@@ -16,13 +16,16 @@ package net.rptools.maptool.client.functions;
 
 import java.awt.Rectangle;
 import java.util.List;
+import net.rptools.maptool.client.ui.zone.ZoneRenderer;
 import net.rptools.maptool.language.I18N;
 import net.rptools.maptool.model.CellPoint;
 import net.rptools.maptool.model.Grid;
+import net.rptools.maptool.model.ZonePoint;
 import net.rptools.maptool_fx.MapTool;
 import net.rptools.parser.Parser;
 import net.rptools.parser.ParserException;
 import net.rptools.parser.function.AbstractFunction;
+import net.sf.json.JSONObject;
 
 public class ZoomFunctions extends AbstractFunction {
   /** Singleton for class * */
@@ -97,7 +100,7 @@ public class ZoomFunctions extends AbstractFunction {
    * Given a grid pixels or cell coordinates of top left (x1, y1) and bottom right (x2, y2) this
    * function returns a json of rectangular coordinates of the current view
    *
-   * @param arg should be optional boolean pixels|grid, optional String delim
+   * @param args should be optional boolean pixels|grid, optional String delim
    * @return JSON of coordinates or String props with delim
    * @throws ParserException
    */

@@ -122,7 +122,10 @@ public class MapToolLineParser {
               ExportDataFunctions.getInstance(),
               RESTfulFunctions.getInstance(),
               HeroLabFunctions.getInstance(),
-              LastRolledFunction.getInstance())
+              LogFunctions.getInstance(),
+              LastRolledFunction.getInstance(),
+              Base64Functions.getInstance(),
+              TokenTerrainModifierFunctions.getInstance())
           .collect(Collectors.toList());
 
   /** Name and Source or macros that come from chat. */
@@ -163,6 +166,12 @@ public class MapToolLineParser {
 
   /** The dice rolls that occurred in the previous parse this one. */
   private List<Integer> rolled = new LinkedList<>();
+
+  /**
+   * The dice rolls that occurred since either start of the macro or the previous time {@link
+   * #getNewRolls()} was called.
+   */
+  private List<Integer> newRolls = new LinkedList<>();
 
   private enum Output { // Mutually exclusive output formats
     NONE,
@@ -206,7 +215,6 @@ public class MapToolLineParser {
   }
 
   public List<Function> getMacroFunctions() {
-    mapToolParserFunctions.add(TokenMoveFunctions.getInstance());
     return mapToolParserFunctions;
   }
 
@@ -704,9 +712,12 @@ public class MapToolLineParser {
       throws ParserException {
 
     // copy previous rolls and clear out for new rolls.
-    lastRolled.clear();
-    lastRolled.addAll(rolled);
-    rolled.clear();
+    if (parserRecurseDepth == 0 && macroRecurseDepth == 0) {
+      lastRolled.clear();
+      lastRolled.addAll(rolled);
+      rolled.clear();
+      newRolls.clear();
+    }
 
     if (line == null) {
       return "";
@@ -1469,6 +1480,7 @@ public class MapToolLineParser {
       Result res =
           createParser(resolver, tokenInContext == null ? false : true).evaluate(expression);
       rolled.addAll(res.getRolled());
+      newRolls.addAll(res.getRolled());
 
       return res;
     } catch (AbortFunctionException e) {
@@ -1625,7 +1637,11 @@ public class MapToolLineParser {
       }
       boolean secure = isSecure(macroName, token);
       macroContext = new MapToolMacroContext(macroName, macroLocation, secure);
+
+      MacroButtonProperties mbp = token.getMacro(macroName, false);
+      log.info(macroName + "::" + macroLocation + "::" + mbp.getToolTip());
     }
+
     // Error if macro not found
     if (macroBody == null) {
       throw new ParserException(I18N.getText("lineParser.unknownMacro", macroName));
@@ -2168,11 +2184,42 @@ public class MapToolLineParser {
     return contextStack.size();
   }
 
+  /**
+   * Returns the raw dice rolls that have occurred during this pars / execution.
+   *
+   * @return the raw dice rolls that have occurred during this parse / execution.
+   */
   public List<Integer> getRolled() {
     return List.copyOf(rolled);
   }
 
+  /**
+   * Returns the raw dice rolls that occurred during the last parse / execution.
+   *
+   * @return the raw dice rolls that occurred during the last parse / execution.
+   */
   public List<Integer> getLastRolled() {
     return List.copyOf(lastRolled);
+  }
+
+  /**
+   * Returns the raw dice rolls that have occurred during this parse since the last time <code>
+   * getNewRolls()</code> was called. If <code>getNewRolls()</code> has not yet been called during
+   * this parse / execution then all rolls since the start of the parse / execution will be
+   * returned.
+   *
+   * @return the raw dice rolls that occurred since last call to this funnction.
+   */
+  public List<Integer> getNewRolls() {
+    List<Integer> rolls = List.copyOf(newRolls);
+    newRolls.clear();
+    return rolls;
+  }
+
+  /** Resets all the lists of rolls that have occurred. */
+  public void clearRolls() {
+    newRolls.clear();
+    lastRolled.clear();
+    rolled.clear();
   }
 }

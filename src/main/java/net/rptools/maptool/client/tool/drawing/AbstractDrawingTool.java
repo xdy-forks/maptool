@@ -42,7 +42,6 @@ import net.rptools.maptool.model.Zone.Layer;
 import net.rptools.maptool.model.ZonePoint;
 import net.rptools.maptool.model.drawing.Drawable;
 import net.rptools.maptool.model.drawing.Pen;
-import net.rptools.maptool_fx.MapTool;
 
 /** Tool for drawing freehand lines. */
 public abstract class AbstractDrawingTool extends DefaultTool implements ZoneOverlay {
@@ -54,6 +53,8 @@ public abstract class AbstractDrawingTool extends DefaultTool implements ZoneOve
   private static LayerSelectionDialog layerSelectionDialog;
 
   private static Zone.Layer selectedLayer = Zone.Layer.TOKEN;
+
+  protected static final int TOOLBAR_ICON_SIZE = 32;
 
   static {
     layerSelectionDialog =
@@ -208,7 +209,7 @@ public abstract class AbstractDrawingTool extends DefaultTool implements ZoneOve
     } else {
       pen.setBackgroundMode(Pen.MODE_TRANSPARENT);
     }
-    pen.setSquareCap(picker.isSquareCapSelected());
+    // FIXME 2.0 merge pen.setSquareCap(picker.isSquareCapSelected());
     pen.setThickness(picker.getStrokeWidth());
     return pen;
   }

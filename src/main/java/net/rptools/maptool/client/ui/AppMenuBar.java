@@ -89,10 +89,10 @@ public class AppMenuBar extends JMenuBar {
     // fileMenu.addSeparator();
     // fileMenu.add(new JMenuItem(AppActions.EXIT));
     // }
-    if (!AppUtil.MAC_OS_X) {
+    /*if (!AppUtil.MAC_OS_X) {
       fileMenu.addSeparator();
       fileMenu.add(new JMenuItem(AppActions.EXIT));
-    }
+    }*/
     return fileMenu;
   }
 
@@ -187,6 +187,7 @@ public class AppMenuBar extends JMenuBar {
     menu.add(new JSeparator());
 
     menu.add(new RPCheckBoxMenuItem(AppActions.TOGGLE_COLLECT_PROFILING_DATA, menu));
+    menu.add(new RPCheckBoxMenuItem(AppActions.TOGGLE_LOG_CONSOLE, menu));
 
     return menu;
   }
