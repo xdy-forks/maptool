@@ -24,81 +24,21 @@ import io.sentry.SentryClient;
 import io.sentry.SentryClientFactory;
 import io.sentry.event.BreadcrumbBuilder;
 import io.sentry.event.UserBuilder;
-import java.awt.Color;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
-import java.awt.Transparency;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JList;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
-import javax.swing.ToolTipManager;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
-import javax.swing.plaf.FontUIResource;
 import net.rptools.clientserver.hessian.client.ClientConnection;
-import net.rptools.lib.BackupManager;
-import net.rptools.lib.DebugStream;
-import net.rptools.lib.EventDispatcher;
-import net.rptools.lib.FileUtil;
-import net.rptools.lib.TaskBarFlasher;
+import net.rptools.lib.*;
 import net.rptools.lib.image.ThumbnailManager;
 import net.rptools.lib.net.RPTURLStreamHandlerFactory;
 import net.rptools.lib.sound.SoundManager;
 import net.rptools.lib.swing.SwingUtil;
 import net.rptools.maptool.client.functions.UserDefinedMacroFunctions;
-import net.rptools.maptool.client.swing.ISplashScreen;
-import net.rptools.maptool.client.swing.MapToolEventQueue;
-import net.rptools.maptool.client.swing.NoteFrame;
-import net.rptools.maptool.client.swing.SplashScreenJFX;
-import net.rptools.maptool.client.swing.SplashScreenSwing;
-import net.rptools.maptool.client.ui.AppMenuBar;
-import net.rptools.maptool.client.ui.ConnectionStatusPanel;
-import net.rptools.maptool.client.ui.MapToolFrame;
-import net.rptools.maptool.client.ui.OSXAdapter;
-import net.rptools.maptool.client.ui.StartServerDialogPreferences;
+import net.rptools.maptool.client.swing.*;
+import net.rptools.maptool.client.ui.*;
 import net.rptools.maptool.client.ui.logger.LogConsoleFrame;
 import net.rptools.maptool.client.ui.zone.PlayerView;
 import net.rptools.maptool.client.ui.zone.ZoneRenderer;
 import net.rptools.maptool.client.ui.zone.ZoneRendererFactory;
 import net.rptools.maptool.language.I18N;
-import net.rptools.maptool.model.AssetManager;
-import net.rptools.maptool.model.Campaign;
-import net.rptools.maptool.model.CampaignFactory;
-import net.rptools.maptool.model.GUID;
-import net.rptools.maptool.model.ObservableList;
-import net.rptools.maptool.model.Player;
-import net.rptools.maptool.model.TextMessage;
-import net.rptools.maptool.model.Zone;
-import net.rptools.maptool.model.ZoneFactory;
+import net.rptools.maptool.model.*;
 import net.rptools.maptool.protocol.syrinscape.SyrinscapeURLStreamHandler;
 import net.rptools.maptool.server.MapToolServer;
 import net.rptools.maptool.server.ServerCommand;
@@ -109,11 +49,7 @@ import net.rptools.maptool.util.UPnPUtil;
 import net.rptools.maptool.util.UserJvmPrefs;
 import net.rptools.maptool.webapi.MTWebAppServer;
 import net.tsc.servicediscovery.ServiceAnnouncer;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,6 +57,23 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
 import org.apache.logging.log4j.core.config.Configurator;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.text.MessageFormat;
+import java.util.List;
+import java.util.*;
 
 /** */
 public class MapTool {
@@ -1266,7 +1219,7 @@ public class MapTool {
       JavaVersion = Double.valueOf(version);
       if (JavaVersion < 1.8) {
         keepgoing = MapTool.confirm("msg.error.javaVersionTooOld", version);
-      } else if (JavaVersion < 11) {
+      } else if (JavaVersion <= 11) {
         // Java 1.8 through Java 10 is fine. Java 9 is where the numbering scheme changed,
         // and Java 11 is when Oracle started unbundling the JavaFX library. We can handle
         // up to but not including Java 11.
@@ -1647,6 +1600,7 @@ public class MapTool {
       // exception.
       String imgName = "net/rptools/maptool/client/image/maptool_splash_template.png";
       splash = new SplashScreenSwing(imgName, isDevelopment() ? getVersion() : "v" + getVersion());
+      log.info("Unable to launch FX Splashscreen, defaulting to swing splash screen...");
     }
 
     // Protocol handlers

@@ -17,7 +17,15 @@ package net.rptools.maptool.client.functions;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
-import java.awt.Desktop;
+import net.rptools.maptool.client.AppPreferences;
+import net.rptools.maptool.client.MapTool;
+import net.rptools.maptool.language.I18N;
+import net.rptools.parser.Parser;
+import net.rptools.parser.ParserException;
+import net.rptools.parser.function.AbstractFunction;
+import okhttp3.*;
+
+import java.awt.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -25,18 +33,6 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.rptools.maptool.client.AppPreferences;
-import net.rptools.maptool.client.MapTool;
-import net.rptools.maptool.language.I18N;
-import net.rptools.parser.Parser;
-import net.rptools.parser.ParserException;
-import net.rptools.parser.function.AbstractFunction;
-import okhttp3.Headers;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 /**
  * RESTful based functions REST.get, REST.post, REST.put, REST.patch, REST.delete
@@ -55,7 +51,7 @@ import okhttp3.Response;
  * body of the response is returned in what ever form the call returns.
  */
 public class RESTfulFunctions extends AbstractFunction {
-  private static final Logger log = LogManager.getLogger(RESTfulFunctions.class);
+  //  private static final Logger log = LogManager.getLogger(RESTfulFunctions.class);
 
   private static final RESTfulFunctions instance = new RESTfulFunctions();
 
