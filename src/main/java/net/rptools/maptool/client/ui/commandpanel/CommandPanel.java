@@ -450,10 +450,7 @@ public class CommandPanel extends JPanel implements Observer {
     commitCommand(null);
   }
 
-  /**
-   * Disables the chat notification toggle if the GM enforces notification
-   *
-   */
+  /** Disables the chat notification toggle if the GM enforces notification */
   public void disableNotifyButton(Boolean disable) {
     // Little clumsy, but when the menu item is _enabled_, the button should be _disabled_
     if (!MapTool.getPlayer().isGM()) {

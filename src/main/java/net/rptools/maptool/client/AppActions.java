@@ -1339,7 +1339,8 @@ public class AppActions {
         @Override
         public void execute(ActionEvent e) {
           AppState.setLoggingToConsole(!AppState.isLoggingToConsole());
-          // FIXME 2.0 Merge MapTool.getLogConsoleNoteFrame().setVisible(AppState.isLoggingToConsole());
+          // FIXME 2.0 Merge
+          // MapTool.getLogConsoleNoteFrame().setVisible(AppState.isLoggingToConsole());
         }
       };
 

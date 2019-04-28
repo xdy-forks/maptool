@@ -25,7 +25,6 @@ import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import net.rptools.maptool.language.I18N;
-import net.rptools.maptool.model.drawing.AbstractDrawing;
 import net.rptools.maptool.model.drawing.AbstractTemplate;
 import net.rptools.maptool.model.drawing.DrawablesGroup;
 import net.rptools.maptool.model.drawing.DrawnElement;
@@ -103,11 +102,10 @@ public class DrawPanelTreeCellRenderer extends DefaultTreeCellRenderer {
       int perc = (int) (pen.getOpacity() * 100);
       result = result + String.format(" opacity %s%%", perc);
     }
-    /** FIXME 2.0 merge
-    if (drawing instanceof AbstractDrawing) {
-      String dName = ((AbstractDrawing) drawing).getName();
-      if (dName != null && !"".equals(dName)) result = dName + ": " + result;
-    }*/
+    /**
+     * FIXME 2.0 merge if (drawing instanceof AbstractDrawing) { String dName = ((AbstractDrawing)
+     * drawing).getName(); if (dName != null && !"".equals(dName)) result = dName + ": " + result; }
+     */
     return result;
   }
 

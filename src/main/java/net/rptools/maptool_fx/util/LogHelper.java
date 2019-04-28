@@ -30,7 +30,6 @@ public class LogHelper {
         return appender.getName();
       }
 
-    }
-    else return "NOT_CONFIGURED";
+    } else return "NOT_CONFIGURED";
   }
 }

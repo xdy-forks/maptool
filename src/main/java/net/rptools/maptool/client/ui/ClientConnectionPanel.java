@@ -16,11 +16,9 @@ package net.rptools.maptool.client.ui;
 
 import java.awt.event.MouseListener;
 import javax.swing.JList;
-import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.ListSelectionModel;
 import net.rptools.lib.swing.PopupListener;
-import net.rptools.maptool.client.AppActions;
 import net.rptools.maptool.client.MapTool;
 import net.rptools.maptool.client.PlayerListModel;
 
