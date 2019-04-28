@@ -1,10 +1,10 @@
 language: java
-jdk: openjdk11
+jdk: openjdk12
 sudo: false
 matrix:
   include:
   - os: osx
-    osx_image: xcode10
+    osx_image: xcode10.2
 script:
   - ./gradlew build
 before_deploy:
