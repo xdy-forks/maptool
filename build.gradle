@@ -172,16 +172,15 @@ dependencies {
     // sourceControl gitRepository currently not producing classpath for Eclipse
     // using jitpack.io for now
     // implementation 'net.rptools.clientserver:clientserver:1.4.0.+'
-    implementation 'com.github.RPTools:clientserver:1.4.0.0'
-    compile 'com.github.RPTools:clientserver:1.4.0.0'
+    implementation 'com.github.xdy-forks:clientserver:-SNAPSHOT'
+    compile 'com.github.xdy-forks:clientserver:-SNAPSHOT'
 
     implementation 'commons-io:commons-io:2.6'
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-net:commons-net:3.6'
     implementation 'commons-cli:commons-cli:1.4'
 
-    implementation 'com.github.xdy-forks:parser:1.5.5'
-    compile 'com.github.xdy-forks:parser:1.5.5'
+    implementation 'com.github.xdy-forks:parser:-SNAPSHOT'
 
 
     implementation 'jide-common:jide-common:3.2.3'
@@ -254,8 +253,8 @@ dependencies {
     // sourceControl gitRepository currently not producing classpath for Eclipse
     // using jitpack.io for now
     // compile ('net.rptools.dicelib:dicelib:1.5.2')
-    implementation 'com.github.RPTools:dicelib:1.5.5'
-    compile 'com.github.RPTools:dicelib:1.5.5'
+    implementation 'com.github.xdy-forks:dicelib:-SNAPSHOT'
+    compile 'com.github.xdy-forks:dicelib:-SNAPSHOT'
 
 
     // Noise Generator
@@ -305,6 +304,7 @@ dependencies {
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.5.2'
 
     runtimeOnly 'net.rptools.maptool.resource:maptool.resource:1.0.b18'
+    compile 'com.github.xdy-forks:parser:-SNAPSHOT'
 }
 
 
