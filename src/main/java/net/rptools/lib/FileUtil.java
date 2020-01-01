@@ -15,6 +15,7 @@
 package net.rptools.lib;
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.Xpp3Driver;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -531,7 +532,7 @@ public class FileUtil {
    * @return a configured XStream
    */
   public static XStream getConfiguredXStream() {
-    XStream xStream = new XStream();
+    XStream xStream = new XStream(new Xpp3Driver());
     XStream.setupDefaultSecurity(xStream);
     xStream.allowTypesByWildcard(new String[] {"net.rptools.**", "java.awt.**", "sun.awt.**"});
     return xStream;
