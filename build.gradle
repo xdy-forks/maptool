@@ -178,14 +178,14 @@ dependencies {
     // sourceControl gitRepository currently not producing classpath for Eclipse
     // using jitpack.io for now
     // implementation 'net.rptools.clientserver:clientserver:1.4.0.+'
-    implementation 'com.github.xdy-forks:clientserver:1.6.0'
-    compile 'com.github.xdy-forks:clientserver:1.6.0'
+    implementation 'com.github.xdy-forks:clientserver:-SNAPSHOT'
+    compile 'com.github.xdy-forks:clientserver:-SNAPSHOT'
 
     implementation 'commons-io:commons-io:2.6'
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-net:commons-net:3.6'
     implementation 'commons-cli:commons-cli:1.4'
-    implementation 'com.github.xdy-forks:parser:1.6.0'
+    implementation 'com.github.xdy-forks:parser:-SNAPSHOT'
 
 
     implementation 'jide-common:jide-common:3.2.3'
@@ -259,8 +259,8 @@ dependencies {
 
     // sourceControl gitRepository currently not producing classpath for Eclipse
     // using jitpack.io for now
-    implementation 'com.github.xdy-forks:dicelib:1.6.0'
-    compile 'com.github.xdy-forks:dicelib:1.6.0'
+    implementation 'com.github.xdy-forks:dicelib:-SNAPSHOT'
+    compile 'com.github.xdy-forks:dicelib:-SNAPSHOT'
 
 
     // Noise Generator
