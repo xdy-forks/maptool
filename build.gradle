@@ -2,6 +2,9 @@
 * For more details take a look at the Java Quickstart chapter in the Gradle
 * user guide available at https://docs.gradle.org/4.1/userguide/tutorial_java_projects.html
 */
+
+
+import org.ajoberstar.grgit.Grgit
 import org.gradle.plugins.ide.eclipse.model.AccessRule
 
 buildscript {
@@ -11,6 +14,8 @@ buildscript {
 
     repositories {
         mavenCentral()
+        jcenter()
+        maven { url 'https://plugins.gradle.org/m2/' }
     }
 }
 
@@ -45,7 +50,7 @@ applicationDefaultJvmArgs = ["-Xss8M"]
 // Custom properties
 ext {
     // Get tag and commit info from Git to use for version numbering
-    def grgit = org.ajoberstar.grgit.Grgit.open(currentDir: file('.'))
+    def grgit = Grgit.open(currentDir: file('.'))
     def head = grgit.head()
     def tags = grgit.tag.list().find {
         it.commit == head
@@ -147,9 +152,10 @@ repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
-    maven { url = 'http://maptool.craigs-stuff.net/repo/' }
-    maven { url = 'http://www.nerps.net/repo/' }
-    maven { url = 'https://jitpack.io' }
+    maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url 'http://maptool.craigs-stuff.net/repo/' }
+    maven { url 'http://www.nerps.net/repo/' }
+    maven { url 'https://jitpack.io' }
 }
 
 
@@ -179,7 +185,6 @@ dependencies {
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-net:commons-net:3.6'
     implementation 'commons-cli:commons-cli:1.4'
-
     implementation 'com.github.xdy-forks:parser:-SNAPSHOT'
 
 
@@ -198,7 +203,9 @@ dependencies {
     implementation 'org.eclipse.jetty.websocket:websocket-api:9.4.25.v20191220'
 
     implementation 'net.sf.ezmorph:ezmorph:1.0.6'
-    implementation 'net.sf.json-lib:json-lib:2.4:jdk15'
+    implementation('net.sf.json-lib:json-lib:2.4:jdk15') {
+        exclude group: 'commons-beanutils', module: 'commons-beanutils'
+    }
 
     implementation 'org.reflections:reflections:0.9.11'
     implementation 'com.caucho.hessian:hessian:3.1.6'
@@ -252,7 +259,6 @@ dependencies {
 
     // sourceControl gitRepository currently not producing classpath for Eclipse
     // using jitpack.io for now
-    // compile ('net.rptools.dicelib:dicelib:1.5.2')
     implementation 'com.github.xdy-forks:dicelib:-SNAPSHOT'
     compile 'com.github.xdy-forks:dicelib:-SNAPSHOT'
 
@@ -302,9 +308,9 @@ dependencies {
     compile 'org.swinglabs:swing-worker:1.2'
     compile 'yasb:yasb:0.2-21012007'
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.5.2'
+    compile 'org.ajoberstar.grgit:grgit-gradle:4.0.1'
 
     runtimeOnly 'net.rptools.maptool.resource:maptool.resource:1.0.b18'
-    compile 'com.github.xdy-forks:parser:-SNAPSHOT'
 }
 
 
