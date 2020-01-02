@@ -311,7 +311,7 @@ dependencies {
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.5.2'
     compile 'org.ajoberstar.grgit:grgit-gradle:4.0.1'
 
-    runtimeOnly 'net.rptools.maptool.resource:maptool.resource:1.0.b18'
+    runtimeOnly 'net.rptools.maptool.resource:maptool.resource:1.01.b18'
 }
 
 
