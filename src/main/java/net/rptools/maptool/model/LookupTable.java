@@ -176,15 +176,12 @@ public class LookupTable {
 
   public static class LookupEntry {
 
-    private int min;
-    private int max;
+    private final int min;
+    private final int max;
 
-    private String value;
+    private final String value;
 
-    private MD5Key imageId;
-
-    /** @Deprecated here to prevent xstream from breaking b24-b25 */
-    private String result;
+    private final MD5Key imageId;
 
     public LookupEntry(int min, int max, String result, MD5Key imageId) {
       this.min = min;
@@ -206,11 +203,6 @@ public class LookupTable {
     }
 
     public String getValue() {
-      // Temporary fix to convert b24 to b25
-      if (result != null) {
-        value = result;
-        result = null;
-      }
       return value;
     }
   }
