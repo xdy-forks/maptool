@@ -26,7 +26,8 @@ import net.rptools.parser.ParserException;
 
 public class LookupTable {
 
-  private static ExpressionParser expressionParser = new ExpressionParser();
+  private static final ExpressionParser expressionParser = new ExpressionParser();
+  private final Object lock = new Object();
 
   private List<LookupEntry> entryList;
   private String name;
@@ -38,17 +39,21 @@ public class LookupTable {
   public LookupTable() {}
 
   public LookupTable(LookupTable table) {
-    name = table.name;
-    defaultRoll = table.defaultRoll;
-    tableImage = table.tableImage;
+    synchronized (lock) {
+      name = table.name;
+      defaultRoll = table.defaultRoll;
+      tableImage = table.tableImage;
 
-    if (table.entryList != null) {
-      getInternalEntryList().addAll(table.entryList);
+      if (table.entryList != null) {
+        getInternalEntryList().addAll(table.entryList);
+      }
     }
   }
 
   public void setRoll(String roll) {
-    defaultRoll = roll;
+    synchronized (lock) {
+      defaultRoll = roll;
+    }
   }
 
   public void clearEntries() {
@@ -68,11 +73,15 @@ public class LookupTable {
   }
 
   public void setName(String name) {
-    this.name = name;
+    synchronized (lock) {
+      this.name = name;
+    }
   }
 
   public String getName() {
-    return name;
+    synchronized (lock) {
+      return name;
+    }
   }
 
   public LookupEntry getLookup(String roll) throws ParserException {
@@ -89,25 +98,27 @@ public class LookupTable {
       Integer minmin = Integer.MAX_VALUE;
       Integer maxmax = Integer.MIN_VALUE;
 
-      for (LookupEntry entry : getInternalEntryList()) {
-        if (entry.min < minmin) {
-          minmin = entry.min;
+      synchronized (lock) {
+        for (LookupEntry entry : getInternalEntryList()) {
+          if (entry.min < minmin) {
+            minmin = entry.min;
+          }
+          if (entry.max > maxmax) {
+            maxmax = entry.max;
+          }
         }
-        if (entry.max > maxmax) {
-          maxmax = entry.max;
+        if (tableResult > maxmax) {
+          tableResult = maxmax;
         }
-      }
-      if (tableResult > maxmax) {
-        tableResult = maxmax;
-      }
-      if (tableResult < minmin) {
-        tableResult = minmin;
-      }
+        if (tableResult < minmin) {
+          tableResult = minmin;
+        }
 
-      for (LookupEntry entry : getInternalEntryList()) {
-        if (tableResult >= entry.min && tableResult <= entry.max) {
-          // Support for "/" commands
-          return entry;
+        for (LookupEntry entry : getInternalEntryList()) {
+          if (tableResult >= entry.min && tableResult <= entry.max) {
+            // Support for "/" commands
+            return entry;
+          }
         }
       }
 
@@ -119,8 +130,10 @@ public class LookupTable {
   }
 
   private String getDefaultRoll() {
-    if (defaultRoll != null && defaultRoll.length() > 0) {
-      return defaultRoll;
+    synchronized (lock) {
+      if (defaultRoll != null && defaultRoll.length() > 0) {
+        return defaultRoll;
+      }
     }
 
     // Find the min and max range
@@ -140,10 +153,12 @@ public class LookupTable {
   }
 
   private List<LookupEntry> getInternalEntryList() {
-    if (entryList == null) {
-      entryList = new ArrayList<LookupEntry>();
+    synchronized (lock) {
+      if (entryList == null) {
+        entryList = new ArrayList<>();
+      }
+      return entryList;
     }
-    return entryList;
   }
 
   public List<LookupEntry> getEntryList() {
@@ -151,11 +166,15 @@ public class LookupTable {
   }
 
   public MD5Key getTableImage() {
-    return tableImage;
+    synchronized (lock) {
+      return tableImage;
+    }
   }
 
   public void setTableImage(MD5Key tableImage) {
-    this.tableImage = tableImage;
+    synchronized (lock) {
+      this.tableImage = tableImage;
+    }
   }
 
   public String toString() {
@@ -209,7 +228,7 @@ public class LookupTable {
 
   public Set<MD5Key> getAllAssetIds() {
 
-    Set<MD5Key> assetSet = new HashSet<MD5Key>();
+    Set<MD5Key> assetSet = new HashSet<>();
     if (getTableImage() != null) {
       assetSet.add(getTableImage());
     }
@@ -228,10 +247,12 @@ public class LookupTable {
    *     that the table will be hidden from players.
    */
   public Boolean getVisible() {
-    if (visible == null) {
-      visible = new Boolean(true);
+    synchronized (lock) {
+      if (visible == null) {
+        visible = Boolean.TRUE;
+      }
+      return visible;
     }
-    return visible;
   }
 
   /**
@@ -241,7 +262,9 @@ public class LookupTable {
    *     indicates that the table will be hidden from players.
    */
   public void setVisible(Boolean value) {
-    visible = value;
+    synchronized (lock) {
+      visible = value;
+    }
   }
 
   /**
@@ -252,10 +275,12 @@ public class LookupTable {
    *     ALWAYS perform lookups against a table.
    */
   public Boolean getAllowLookup() {
-    if (allowLookup == null) {
-      allowLookup = true;
+    synchronized (lock) {
+      if (allowLookup == null) {
+        allowLookup = true;
+      }
+      return allowLookup;
     }
-    return allowLookup;
   }
 
   /**
@@ -266,6 +291,8 @@ public class LookupTable {
    *     ALWAYS perform lookups against a table.
    */
   public void setAllowLookup(Boolean value) {
-    allowLookup = value;
+    synchronized (lock) {
+      allowLookup = value;
+    }
   }
 }
