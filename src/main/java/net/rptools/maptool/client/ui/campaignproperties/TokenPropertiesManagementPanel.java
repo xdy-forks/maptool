@@ -244,22 +244,26 @@ public class TokenPropertiesManagementPanel extends AbeillePanel<CampaignPropert
           continue;
         }
 
-        TokenProperty property = new TokenProperty();
+        boolean showOnStatSheet = false;
+        boolean ownerOnly = false;
+        boolean gmOnly = false;
+        String defaultVal = null;
+        String shortName = null;
 
         // Prefix
         while (true) {
           if (line.startsWith("*")) {
-            property.setShowOnStatSheet(true);
+            showOnStatSheet = true;
             line = line.substring(1);
             continue;
           }
           if (line.startsWith("@")) {
-            property.setOwnerOnly(true);
+            ownerOnly = true;
             line = line.substring(1);
             continue;
           }
           if (line.startsWith("#")) {
-            property.setGMOnly(true);
+            gmOnly = true;
             line = line.substring(1);
             continue;
           }
@@ -274,9 +278,9 @@ public class TokenPropertiesManagementPanel extends AbeillePanel<CampaignPropert
         // in a single property line
         int indexDefault = line.indexOf(":");
         if (indexDefault > 0) {
-          String defaultVal = line.substring(indexDefault + 1).trim();
-          if (defaultVal.length() > 0) {
-            property.setDefaultValue(defaultVal);
+          String trim = line.substring(indexDefault + 1).trim();
+          if (trim.length() > 0) {
+            defaultVal = trim;
           }
 
           // remove the default value from the end of the string...
@@ -286,13 +290,17 @@ public class TokenPropertiesManagementPanel extends AbeillePanel<CampaignPropert
         // (Really should handle nested parens here)
         int index = line.indexOf("(");
         if (index > 0) {
-          String shortName = line.substring(index + 1, line.lastIndexOf(")")).trim();
-          if (shortName.length() > 0) {
-            property.setShortName(shortName);
+          String trim = line.substring(index + 1, line.lastIndexOf(")")).trim();
+          if (trim.length() > 0) {
+            shortName = trim;
           }
           line = line.substring(0, index).trim();
         }
-        property.setName(line);
+        String name = line;
+
+        TokenProperty property =
+            new TokenProperty(name, shortName, showOnStatSheet, ownerOnly, gmOnly, defaultVal);
+
         // Since property names are not case-sensitive, let's make sure that we don't
         // already have this name represented somewhere in the list.
         String old = caseCheck.get(line);

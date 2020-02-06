@@ -555,9 +555,8 @@ public class CampaignPropertiesDialog extends JDialog {
           }
         }
         SightType sight =
-            new SightType(label, magnifier, personalLight, shape, arc, scaleWithToken);
-        sight.setDistance(range);
-        sight.setOffset(offset);
+            new SightType(
+                label, magnifier, personalLight, shape, arc, range, offset, scaleWithToken);
 
         // Store
         sightList.add(sight);
