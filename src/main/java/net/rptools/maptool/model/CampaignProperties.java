@@ -79,9 +79,7 @@ public class CampaignProperties {
 
   public CampaignProperties(CampaignProperties properties) {
     for (Entry<String, List<TokenProperty>> entry : properties.tokenTypeMap.entrySet()) {
-      List<TokenProperty> typeList = new ArrayList<TokenProperty>();
-      typeList.addAll(properties.tokenTypeMap.get(entry.getKey()));
-
+      List<TokenProperty> typeList = new ArrayList<>(properties.tokenTypeMap.get(entry.getKey()));
       tokenTypeMap.put(entry.getKey(), typeList);
     }
     remoteRepositoryList.addAll(properties.remoteRepositoryList);
@@ -96,7 +94,7 @@ public class CampaignProperties {
     // TODO: This doesn't feel right, should we deep copy, or does this do that automatically ?
     lightSourcesMap.putAll(properties.lightSourcesMap);
 
-    if (properties.tokenStates == null || properties.tokenStates.isEmpty()) {
+    if (properties.tokenStates.isEmpty()) {
       properties.initTokenStatesMap();
     }
     for (BooleanTokenOverlay overlay : properties.tokenStates.values()) {
@@ -104,7 +102,7 @@ public class CampaignProperties {
       tokenStates.put(overlay.getName(), overlay);
     } // endfor
 
-    if (properties.tokenBars == null || properties.tokenBars.isEmpty()) {
+    if (properties.tokenBars.isEmpty()) {
       properties.initTokenBarsMap();
     }
     for (BarTokenOverlay overlay : properties.tokenBars.values()) {
@@ -115,7 +113,7 @@ public class CampaignProperties {
     setInitiativeOwnerPermissions(properties.initiativeOwnerPermissions);
     setInitiativeMovementLock(properties.initiativeMovementLock);
 
-    if (properties.characterSheets == null || properties.characterSheets.isEmpty()) {
+    if (properties.characterSheets.isEmpty()) {
       properties.initCharacterSheetsMap();
     }
     for (String type : properties.characterSheets.keySet()) {
@@ -124,50 +122,36 @@ public class CampaignProperties {
   }
 
   public void mergeInto(CampaignProperties properties) {
-    if (tokenTypeMap != null) {
-      // This will replace any dups
-      properties.tokenTypeMap.putAll(tokenTypeMap);
-    }
-    if (remoteRepositoryList != null) {
-      // Need to cull out dups
-      for (String repo : properties.remoteRepositoryList) {
-        if (!remoteRepositoryList.contains(repo)) {
-          remoteRepositoryList.add(repo);
-        }
+    // This will replace any dups
+    properties.tokenTypeMap.putAll(tokenTypeMap);
+    // Need to cull out dups
+    for (String repo : properties.remoteRepositoryList) {
+      if (!remoteRepositoryList.contains(repo)) {
+        remoteRepositoryList.add(repo);
       }
     }
-    if (lightSourcesMap != null) {
-      properties.lightSourcesMap.putAll(lightSourcesMap);
-    }
-    if (lookupTableMap != null) {
-      properties.lookupTableMap.putAll(lookupTableMap);
-    }
-    if (sightTypeMap != null) {
-      properties.sightTypeMap.putAll(sightTypeMap);
-    }
-    if (tokenStates != null) {
-      properties.tokenStates.putAll(tokenStates);
-    }
-    if (tokenBars != null) {
-      properties.tokenBars.putAll(tokenBars);
-    }
+    properties.lightSourcesMap.putAll(lightSourcesMap);
+    properties.lookupTableMap.putAll(lookupTableMap);
+    properties.sightTypeMap.putAll(sightTypeMap);
+    properties.tokenStates.putAll(tokenStates);
+    properties.tokenBars.putAll(tokenBars);
   }
 
   public Map<String, List<TokenProperty>> getTokenTypeMap() {
-    if (tokenTypeMap == null) {
+    if (tokenTypeMap.isEmpty()) {
       initTokenTypeMap();
     }
     return tokenTypeMap;
   }
 
   public Map<String, SightType> getSightTypeMap() {
-    if (sightTypeMap == null) {
+    if (sightTypeMap.isEmpty()) {
       initSightTypeMap();
     }
     return sightTypeMap;
   }
 
-  public void setSightTypeMap(Map<String, SightType> map) {
+  public void replaceSightTypeMap(Map<String, SightType> map) {
     if (map != null) {
       sightTypeMap.clear();
       sightTypeMap.putAll(map);
@@ -175,7 +159,7 @@ public class CampaignProperties {
   }
 
   // TODO: This is for conversion from 1.3b19-1.3b20
-  public void setTokenTypeMap(Map<String, List<TokenProperty>> map) {
+  public void replaceTokenTypeMap(Map<String, List<TokenProperty>> map) {
     if (map != null) {
       tokenTypeMap.clear();
       tokenTypeMap.putAll(map);
@@ -190,58 +174,48 @@ public class CampaignProperties {
     return remoteRepositoryList;
   }
 
-  public void setRemoteRepositoryList(List<String> list) {
+  public void replaceRemoteRepositoryList(List<String> list) {
     remoteRepositoryList.clear();
     remoteRepositoryList.addAll(list);
   }
 
   public Map<String, Map<GUID, LightSource>> getLightSourcesMap() {
-    if (lightSourcesMap == null) {
+    if (lightSourcesMap.isEmpty()) {
       initLightSourcesMap();
     }
     return lightSourcesMap;
   }
 
-  public void setLightSourcesMap(Map<String, Map<GUID, LightSource>> map) {
+  public void replaceLightSourcesMap(Map<String, Map<GUID, LightSource>> map) {
     lightSourcesMap.clear();
     lightSourcesMap.putAll(map);
   }
 
   public Map<String, LookupTable> getLookupTableMap() {
-    if (lookupTableMap == null) {
+    if (lookupTableMap.isEmpty()) {
       initLookupTableMap();
     }
     return lookupTableMap;
   }
 
   // TODO: This is for conversion from 1.3b19-1.3b20
-  public void setLookupTableMap(Map<String, LookupTable> map) {
+  public void replaceLookupTableMap(Map<String, LookupTable> map) {
     lookupTableMap.clear();
     lookupTableMap.putAll(map);
   }
 
   public Map<String, BooleanTokenOverlay> getTokenStatesMap() {
-    if (tokenStates == null) {
+    if (tokenStates.isEmpty()) {
       initTokenStatesMap();
     }
     return tokenStates;
   }
 
-  public void setTokenStatesMap(Map<String, BooleanTokenOverlay> map) {
-    tokenStates.clear();
-    tokenStates.putAll(map);
-  }
-
   public Map<String, BarTokenOverlay> getTokenBarsMap() {
-    if (tokenBars == null) {
+    if (tokenBars.isEmpty()) {
       initTokenBarsMap();
     }
     return tokenBars;
-  }
-
-  public void setTokenBarsMap(Map<String, BarTokenOverlay> map) {
-    tokenBars.clear();
-    tokenBars.putAll(map);
   }
 
   private void init() {
@@ -256,22 +230,16 @@ public class CampaignProperties {
   }
 
   private void initLookupTableMap() {
-    if (lookupTableMap != null) {
-      return;
-    }
     lookupTableMap.clear();
   }
 
   private void initLightSourcesMap() {
-    if (lightSourcesMap != null) {
-      return;
-    }
     lightSourcesMap.clear();
 
     try {
       Map<String, List<LightSource>> map = LightSource.getDefaultLightSources();
       for (String key : map.keySet()) {
-        Map<GUID, LightSource> lightSourceMap = new LinkedHashMap<GUID, LightSource>();
+        Map<GUID, LightSource> lightSourceMap = new LinkedHashMap<>();
         for (LightSource source : map.get(key)) {
           lightSourceMap.put(source.getId(), source);
         }
@@ -283,9 +251,6 @@ public class CampaignProperties {
   }
 
   private void initRemoteRepositoryList() {
-    if (remoteRepositoryList != null) {
-      return;
-    }
     remoteRepositoryList.clear();
   }
 
@@ -363,12 +328,9 @@ public class CampaignProperties {
   }
 
   private void initTokenTypeMap() {
-    if (tokenTypeMap != null) {
-      return;
-    }
     tokenTypeMap.clear();
 
-    List<TokenProperty> list = new ArrayList<TokenProperty>();
+    List<TokenProperty> list = new ArrayList<>();
     list.add(new TokenProperty("Strength", "Str"));
     list.add(new TokenProperty("Dexterity", "Dex"));
     list.add(new TokenProperty("Constitution", "Con"));
@@ -410,7 +372,7 @@ public class CampaignProperties {
   }
 
   public Set<MD5Key> getAllImageAssets() {
-    Set<MD5Key> set = new HashSet<MD5Key>();
+    Set<MD5Key> set = new HashSet<>();
 
     // Start with the table images
     for (LookupTable table : getLookupTableMap().values()) {
@@ -471,15 +433,9 @@ public class CampaignProperties {
    * function is never used elsewhere within MapTool. Yet. ;-)
    */
   public Map<String, String> getCharacterSheets() {
-    if (characterSheets == null) {
+    if (characterSheets.isEmpty()) {
       initCharacterSheetsMap();
     }
     return characterSheets;
-  }
-
-  /** @param characterSheets Setter for characterSheets */
-  public void setCharacterSheets(Map<String, String> characterSheets) {
-    this.characterSheets.clear();
-    this.characterSheets.putAll(characterSheets);
   }
 }

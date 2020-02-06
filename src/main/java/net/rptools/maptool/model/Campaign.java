@@ -121,19 +121,19 @@ public class Campaign {
       campaignProperties = new CampaignProperties();
     }
     if (tokenTypeMap != null) {
-      campaignProperties.setTokenTypeMap(tokenTypeMap);
+      campaignProperties.replaceTokenTypeMap(tokenTypeMap);
       tokenTypeMap = null;
     }
     if (remoteRepositoryList != null) {
-      campaignProperties.setRemoteRepositoryList(remoteRepositoryList);
+      campaignProperties.replaceRemoteRepositoryList(remoteRepositoryList);
       remoteRepositoryList = null;
     }
     if (lightSourcesMap != null) {
-      campaignProperties.setLightSourcesMap(lightSourcesMap);
+      campaignProperties.replaceLightSourcesMap(lightSourcesMap);
       lightSourcesMap = null;
     }
     if (lookupTableMap != null) {
-      campaignProperties.setLookupTableMap(lookupTableMap);
+      campaignProperties.replaceLookupTableMap(lookupTableMap);
       lookupTableMap = null;
     }
   }
@@ -209,11 +209,11 @@ public class Campaign {
 
   public void setSightTypes(List<SightType> typeList) {
     checkCampaignPropertyConversion();
-    Map<String, SightType> map = new HashMap<String, SightType>();
+    Map<String, SightType> map = new HashMap<>();
     for (SightType sightType : typeList) {
       map.put(sightType.getName(), sightType);
     }
-    campaignProperties.setSightTypeMap(map);
+    campaignProperties.replaceSightTypeMap(map);
   }
 
   public List<TokenProperty> getTokenPropertyList(String tokenType) {
