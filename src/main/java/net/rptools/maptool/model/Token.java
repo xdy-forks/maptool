@@ -76,15 +76,15 @@ public class Token extends BaseModel implements Cloneable {
   public static final String FILE_THUMBNAIL = "thumbnail";
   public static final String FILE_THUMBNAIL_LARGE = "thumbnail_large";
 
-  public static final String NAME_USE_FILENAME = "Use Filename";
-  public static final String NAME_USE_CREATURE = "Use \"Creature\"";
+  public static final String NAME_USE_FILENAME = I18N.getText("token.naming.use.filename");
+  public static final String NAME_USE_CREATURE = I18N.getText("token.naming.use.creature");
 
-  public static final String NUM_INCREMENT = "Increment";
-  public static final String NUM_RANDOM = "Random";
+  public static final String NUM_INCREMENT = I18N.getText("token.number.increment");
+  public static final String NUM_RANDOM = I18N.getText("token.number.random");
 
-  public static final String NUM_ON_NAME = "Name";
-  public static final String NUM_ON_GM = "GM Name";
-  public static final String NUM_ON_BOTH = "Both";
+  public static final String NUM_ON_NAME = I18N.getText("token.number.display.name");
+  public static final String NUM_ON_GM = I18N.getText("token.number.display.gm.name");
+  public static final String NUM_ON_BOTH = I18N.getText("token.number.display.both.name");
 
   private boolean beingImpersonated = false;
   private GUID exposedAreaGUID;
