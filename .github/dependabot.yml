@@ -1,0 +1,39 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: com.diffplug.spotless:spotless-plugin-gradle
+    versions:
+    - 5.10.0
+    - 5.10.1
+    - 5.10.2
+    - 5.11.0
+    - 5.11.1
+    - 5.12.0
+    - 5.12.1
+    - 5.9.0
+  - dependency-name: com.twelvemonkeys.imageio:imageio-core
+    versions:
+    - 3.6.2
+    - 3.6.3
+    - 3.6.4
+  - dependency-name: org.eclipse.jetty:jetty-server
+    versions:
+    - 11.0.0
+    - 11.0.1
+  - dependency-name: org.apache.pdfbox:pdfbox
+    versions:
+    - 2.0.22
+  - dependency-name: org.apache.logging.log4j:log4j-1.2-api
+    versions:
+    - 2.14.0
+  - dependency-name: org.apache.logging.log4j:log4j-core
+    versions:
+    - 2.14.0
+  - dependency-name: com.squareup.okhttp3:okhttp
+    versions:
+    - 4.9.0
